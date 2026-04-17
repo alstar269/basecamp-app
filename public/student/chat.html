@@ -60,8 +60,14 @@
       window.scrollTo(0, document.body.scrollHeight)
     }
 
+    // 받침 유무에 따른 종결어미 (바울 → 바울이야 / 베드로 → 베드로야)
+    function copula(name) {
+      const last = name.charCodeAt(name.length - 1)
+      const hasBatchim = (last - 0xAC00) % 28 !== 0
+      return hasBatchim ? '이야' : '야'
+    }
     // 첫 인사 (메시지로 저장하지 않고 UX로만)
-    addBubble('mentor', `안녕, ${info.icon} ${info.name}이야. 편하게 이야기 시작해도 돼.`)
+    addBubble('mentor', `안녕, ${info.icon} ${info.name}${copula(info.name)}. 편하게 이야기 시작해도 돼.`)
 
     const form = document.getElementById('chat-form')
     const msgInput = document.getElementById('msg')
@@ -97,7 +103,12 @@
         }
       } catch (err) {
         loading.remove()
-        addBubble('system', '잠시 연결이 불안정해. 다시 시도해 줘.')
+        const reason = err?.data?.error || err?.message || ''
+        let msg = '잠시 연결이 불안정해. 다시 시도해 줘.'
+        if (reason === 'mentor_unavailable') msg = '⚙️ 운영자가 아직 AI 멘토 연결을 활성화하지 않았어요. 잠시 후 다시 시도해 줘.'
+        else if (err?.status === 401) msg = '세션이 만료됐어. 랜딩 페이지로 돌아가 다시 입장해 줘.'
+        else if (err?.status === 429) msg = '⏳ 잠깐만, 너무 빨리 메시지가 오고 있어. 잠시 뒤에 다시 말해 줘.'
+        addBubble('system', msg)
       }
     })
   </script>
