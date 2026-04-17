@@ -39,7 +39,7 @@ router.post('/teacher/signup', async (req, res) => {
     let church = await churches.findBy('name', churchName)
     log('findBy church')
     if (!church) {
-      church = await churches.create({ name: churchName, status: 'approved', approvedAt: Date.now() })
+      church = await churches.create({ name: churchName, status: 'approved', approvedAt: new Date().toISOString() })
       log('church create')
     }
 

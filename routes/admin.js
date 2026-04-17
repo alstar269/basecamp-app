@@ -13,7 +13,7 @@ router.get('/churches', require_('admin'), async (req, res) => {
 })
 
 router.post('/churches/:id/approve', require_('admin'), async (req, res) => {
-  const updated = await collection('churches').update(req.params.id, { status: 'approved', approvedAt: Date.now() })
+  const updated = await collection('churches').update(req.params.id, { status: 'approved', approvedAt: new Date().toISOString() })
   if (!updated) return res.status(404).json({ error: 'not_found' })
   return res.json(updated)
 })
