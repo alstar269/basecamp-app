@@ -64,6 +64,32 @@ router.delete('/retreats/:id', require_('admin'), async (req, res) => {
   return res.json({ ok, deleted: retreat.title })
 })
 
+// 관리자: 여러 수련회 일괄 삭제
+router.post('/retreats/bulk-delete', require_('admin'), async (req, res) => {
+  const { ids } = req.body || {}
+  if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'no_ids' })
+  const results = []
+  for (const id of ids) {
+    try {
+      const retreat = await collection('retreats').get(id)
+      if (!retreat) { results.push({ id, ok: false, reason: 'not_found' }); continue }
+      await collection('retreats').delete(id)
+      results.push({ id, ok: true, title: retreat.title })
+    } catch (e) {
+      results.push({ id, ok: false, reason: e.message })
+    }
+  }
+  return res.json({ results, deleted: results.filter((r) => r.ok).length })
+})
+
+// 관리자: 교회 삭제 (소속 교사·수련회·모든 데이터 cascade)
+router.delete('/churches/:id', require_('admin'), async (req, res) => {
+  const church = await collection('churches').get(req.params.id)
+  if (!church) return res.status(404).json({ error: 'not_found' })
+  const ok = await collection('churches').delete(req.params.id)
+  return res.json({ ok, deleted: church.name })
+})
+
 router.get('/stats', require_('admin'), async (req, res) => {
   const [churches, retreats, teachers, students, conversations, messages, insights, alerts] = await Promise.all([
     collection('churches').list(),

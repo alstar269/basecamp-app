@@ -24,6 +24,14 @@
     <div id="churches"></div>
 
     <h2 class="mt-24">📋 전체 수련회 관리</h2>
+    <div id="retreats-toolbar" class="hidden" style="display:flex; align-items:center; gap:12px; padding: 10px 14px; background: var(--primary-50); border-radius: var(--radius-md); margin-bottom: 12px; flex-wrap: wrap;">
+      <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+        <input type="checkbox" id="select-all-retreats" style="width:18px; height:18px; cursor:pointer;" />
+        <span style="font-size: 14px;">전체 선택</span>
+      </label>
+      <span id="selection-count" class="caption" style="flex:1;"></span>
+      <button class="btn btn-sm" id="bulk-delete" style="background: var(--danger); color: white; min-height: 36px; padding: 6px 16px; flex: 0 0 auto;" disabled>🗑 선택 삭제</button>
+    </div>
     <div id="retreats"></div>
 
     <h2 class="mt-24">👥 멘토 목록</h2>
@@ -69,24 +77,30 @@
         document.getElementById('churches').innerHTML = churches.length === 0
           ? '<div class="card caption">등록된 교회가 없습니다.</div>'
           : churches.map((c) => `
-            <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-              <div>
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap: wrap;">
+              <div style="flex:1; min-width: 180px;">
                 <strong>${c.name}</strong>
                 <div class="caption">등록: ${new Date(c.createdAt).toLocaleDateString('ko-KR')} · <span style="color:${statusColor[c.status]}">● ${statusLabel[c.status]}</span></div>
               </div>
-              <div style="display:flex; gap:6px;">
+              <div style="display:flex; gap:6px; flex: 0 0 auto;">
                 ${c.status === 'pending' ? `
                   <button class="btn btn-sm btn-primary" onclick="approve('${c.id}')">승인</button>
                   <button class="btn btn-sm btn-outline" onclick="reject('${c.id}')">반려</button>
                 ` : ''}
+                <button class="btn btn-sm" style="color: var(--danger); border: 1.5px solid #F0C2C2; background: white; min-height: 34px; padding: 4px 12px; font-size: 13px;" onclick="deleteChurch('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')">🗑 삭제</button>
               </div>
             </div>
           `).join('')
 
-        document.getElementById('retreats').innerHTML = retreats.length === 0
-          ? '<div class="card caption">등록된 수련회가 없습니다.</div>'
-          : retreats.map((r) => `
-            <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        const toolbar = document.getElementById('retreats-toolbar')
+        if (retreats.length === 0) {
+          toolbar.classList.add('hidden')
+          document.getElementById('retreats').innerHTML = '<div class="card caption">등록된 수련회가 없습니다.</div>'
+        } else {
+          toolbar.classList.remove('hidden')
+          document.getElementById('retreats').innerHTML = retreats.map((r) => `
+            <div class="card retreat-row" data-id="${r.id}" data-title="${(r.title || '').replace(/"/g, '&quot;')}" data-count="${r.studentCount}" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <input type="checkbox" class="retreat-check" style="width:18px; height:18px; cursor:pointer; flex: 0 0 auto;" />
               <div style="flex:1; min-width:200px;">
                 <strong>${r.title}</strong>
                 <div class="caption">
@@ -94,11 +108,14 @@
                 </div>
                 <div class="caption">
                   🏛️ ${r.churchName || '—'} · ✉️ ${r.teacherEmail || '—'}
+                  · <span style="font-family: monospace; opacity: 0.6; font-size: 10px;">${r.id.slice(0, 8)}</span>
                 </div>
               </div>
-              <button class="btn btn-sm" style="color: var(--danger); border: 1.5px solid #F0C2C2; background: white; flex: 0 0 auto; min-height: 36px; padding: 6px 14px;" onclick="deleteRetreat('${r.id}', '${(r.title || '').replace(/'/g, "\\'")}', ${r.studentCount})">🗑 삭제</button>
+              <button class="btn btn-sm" style="color: var(--danger); border: 1.5px solid #F0C2C2; background: white; flex: 0 0 auto; min-height: 34px; padding: 4px 12px; font-size: 13px;" onclick="deleteRetreat('${r.id}', '${(r.title || '').replace(/'/g, "\\'")}', ${r.studentCount})">🗑 삭제</button>
             </div>
           `).join('')
+          bindRetreatSelection()
+        }
 
         document.getElementById('mentors').innerHTML = `
           <div class="mentor-grid">
@@ -119,6 +136,45 @@
       }
     }
 
+    function bindRetreatSelection() {
+      const checks = document.querySelectorAll('.retreat-check')
+      const selectAll = document.getElementById('select-all-retreats')
+      const bulkBtn = document.getElementById('bulk-delete')
+      const countLabel = document.getElementById('selection-count')
+
+      function updateUI() {
+        const selected = Array.from(checks).filter((c) => c.checked)
+        countLabel.textContent = selected.length > 0 ? `${selected.length}개 선택됨` : ''
+        bulkBtn.disabled = selected.length === 0
+        selectAll.checked = selected.length === checks.length && checks.length > 0
+        selectAll.indeterminate = selected.length > 0 && selected.length < checks.length
+      }
+
+      checks.forEach((c) => c.addEventListener('change', updateUI))
+      selectAll.onchange = () => {
+        checks.forEach((c) => { c.checked = selectAll.checked })
+        updateUI()
+      }
+      bulkBtn.onclick = async () => {
+        const rows = Array.from(document.querySelectorAll('.retreat-row'))
+          .filter((r) => r.querySelector('.retreat-check').checked)
+        const ids = rows.map((r) => r.dataset.id)
+        const totalStudents = rows.reduce((s, r) => s + Number(r.dataset.count || 0), 0)
+        const msg = `${ids.length}개 수련회를 일괄 삭제할까요?\n\n` +
+                    (totalStudents > 0 ? `⚠️ 학생 세션 ${totalStudents}건도 모두 영구 삭제됩니다.\n` : '') +
+                    `되돌릴 수 없습니다.`
+        if (!confirm(msg)) return
+        try {
+          const r = await api.request('/api/admin/retreats/bulk-delete', { method: 'POST', token, body: { ids } })
+          toast(`${r.deleted}개 삭제 완료`)
+          load()
+        } catch (e) {
+          toast('삭제 실패: ' + (e?.data?.error || e.message), 'error')
+        }
+      }
+      updateUI()
+    }
+
     window.deleteRetreat = async (id, title, count) => {
       const msg = count > 0
         ? `"${title}"을(를) 삭제할까요?\n\n⚠️ 이 수련회엔 학생 ${count}명의 세션이 있습니다. 모두 영구 삭제됩니다.`
@@ -127,6 +183,16 @@
       try {
         await api.request(`/api/admin/retreats/${id}`, { method: 'DELETE', token })
         toast(`삭제 완료: ${title}`)
+        load()
+      } catch (e) {
+        toast('삭제 실패: ' + (e?.data?.error || e.message), 'error')
+      }
+    }
+    window.deleteChurch = async (id, name) => {
+      if (!confirm(`"${name}" 교회를 삭제할까요?\n\n⚠️ 소속 교사·수련회·학생 세션·대화 모두 영구 삭제됩니다.\n되돌릴 수 없습니다.`)) return
+      try {
+        await api.request(`/api/admin/churches/${id}`, { method: 'DELETE', token })
+        toast(`교회 삭제: ${name}`)
         load()
       } catch (e) {
         toast('삭제 실패: ' + (e?.data?.error || e.message), 'error')
