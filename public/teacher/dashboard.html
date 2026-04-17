@@ -24,6 +24,8 @@
       <select class="input" id="retreat-select" style="flex:1; min-height: 40px; font-size: 14px;"></select>
     </div>
 
+    <div id="llm-status-banner"></div>
+
     <div class="alert-banner">
       ℹ 5명 미만 카테고리는 개인정보 보호를 위해 <strong>자동으로 숨겨집니다</strong>. 학생 대화 원문은 교사도 볼 수 없어요.
     </div>
@@ -56,6 +58,26 @@
       const me = await api.request('/api/auth/teacher/me', { token })
       document.getElementById('profile').innerHTML =
         `${me.name} · ${me.churchName} <span style="color: var(--success)">● 활성</span>`
+
+      // LLM 키 설정 여부 배너
+      try {
+        const s = await api.request('/api/settings/llm', { token })
+        const banner = document.getElementById('llm-status-banner')
+        if (!s.isConfigured) {
+          banner.innerHTML = `
+            <div class="danger-banner" style="background: #FFF3E5; border-color: #FFD9A8; color: #8F5A12;">
+              ⚠ <strong>AI 멘토가 아직 연결되지 않았어요.</strong> 학생들이 멘토와 대화하려면 무료 API 키를 등록해 주세요.<br />
+              <a href="/teacher/settings.html" class="btn btn-primary btn-sm mt-8" style="display:inline-flex; margin-top:10px;">🔑 지금 3분만에 설정하기 →</a>
+            </div>
+          `
+        } else {
+          banner.innerHTML = `
+            <div style="padding: 10px 14px; background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 13px; color: #2E7D32;">
+              ✓ AI 멘토 연결됨 (${s.provider === 'google' ? 'Google Gemini' : 'Claude'} · ${s.keyHint}) · <a href="/teacher/settings.html" style="color: var(--primary-500); text-decoration: underline;">설정 변경</a>
+            </div>
+          `
+        }
+      } catch {}
 
       const retreats = await api.request('/api/code/retreats', { token })
       const sel = document.getElementById('retreat-select')

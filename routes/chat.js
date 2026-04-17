@@ -1,17 +1,16 @@
-// 학생 ↔ 멘토 대화 (Claude Haiku). 텍스트 전용.
-// 태그/감정 추출도 같은 호출에서 함께 처리 → InsightTag 저장
+// 학생 ↔ 멘토 대화
+// 교사가 등록한 LLM 키로 호출 (BYOK). 교사 키 없으면 friendly error.
 import express from 'express'
-import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
 import { collection } from '../lib/storage.js'
 import { require_ } from '../lib/auth.js'
 import { getMentor, mentorSystemPrompt } from '../lib/mentors.js'
 import { detectCrisis, crisisResponseText } from '../lib/crisis.js'
+import { decrypt } from '../lib/encrypt.js'
+import { sendChat, PROVIDERS } from '../lib/llm.js'
 
 const router = express.Router()
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-const MODEL = 'claude-haiku-4-5-20251001'
 const MAX_HISTORY = 12
 const MAX_OUTPUT_TOKENS = 400
 
@@ -32,6 +31,24 @@ router.post('/send', require_('student'), async (req, res) => {
   const student = await collection('students').get(req.auth.sub)
   if (!student) return res.status(401).json({ error: 'unauthorized' })
 
+  // 학생이 속한 retreat → teacher → LLM 키 조회
+  const retreat = await collection('retreats').get(student.retreatId)
+  if (!retreat) return res.status(500).json({ error: 'retreat_missing' })
+  const teacher = await collection('teachers').get(retreat.teacherId)
+  if (!teacher) return res.status(500).json({ error: 'teacher_missing' })
+
+  if (!teacher.llmApiKeyEncrypted || !teacher.llmProvider) {
+    return res.status(503).json({ error: 'mentor_not_configured', message: '담당 선생님이 아직 AI 멘토 연결을 설정하지 않았어. 선생님께 말씀드려 줄래?' })
+  }
+
+  let apiKey
+  try {
+    apiKey = decrypt(teacher.llmApiKeyEncrypted)
+  } catch (e) {
+    console.error('[chat] decrypt failed:', e.message)
+    return res.status(500).json({ error: 'key_decrypt_failed' })
+  }
+
   const conversations = collection('conversations')
   const messages = collection('messages')
 
@@ -48,10 +65,9 @@ router.post('/send', require_('student'), async (req, res) => {
     })
   }
 
-  // 1) 위기 탐지 (입력 단계)
+  // 1) 위기 탐지
   const crisis = detectCrisis(text)
 
-  // 학생 메시지 저장
   await messages.create({
     conversationId: conv.id,
     studentId: student.id,
@@ -61,24 +77,23 @@ router.post('/send', require_('student'), async (req, res) => {
     crisisLevel: crisis.level
   })
 
-  // 위기 알림 생성 (원문 없이 카테고리만)
   if (crisis.flagged) {
     await collection('crisis-alerts').create({
       retreatId: student.retreatId,
       conversationId: conv.id,
-      category: crisis.category, // 'self-harm' | 'abuse' | 'distress'
-      level: crisis.level, // 'moderate' | 'high' | 'urgent'
+      category: crisis.category,
+      level: crisis.level,
       ts: Date.now(),
       acknowledgedBy: null
     })
   }
 
-  // 2) 대화 히스토리 (최근 MAX_HISTORY개)
+  // 2) 대화 히스토리 (student=user / mentor=assistant)
   const history = (await messages.list((m) => m.conversationId === conv.id))
     .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
-    .slice(-MAX_HISTORY - 1, -1) // 방금 저장한 것 제외
+    .slice(-MAX_HISTORY - 1, -1)
 
-  const claudeMsgs = [
+  const chatMsgs = [
     ...history.map((m) => ({
       role: m.role === 'student' ? 'user' : 'assistant',
       content: m.content
@@ -86,33 +101,29 @@ router.post('/send', require_('student'), async (req, res) => {
     { role: 'user', content: text }
   ]
 
-  // 3) Claude 호출
+  // 3) 통합 어댑터 호출
   let reply = ''
   try {
     const systemPrompt = mentorSystemPrompt(mentor, { gradeBand: student.gradeBand, nickname: student.nickname })
-    const resp = await client.messages.create({
-      model: MODEL,
-      max_tokens: MAX_OUTPUT_TOKENS,
+    reply = await sendChat({
+      provider: teacher.llmProvider,
+      apiKey,
+      model: teacher.llmModel || PROVIDERS[teacher.llmProvider]?.defaultModel,
       system: systemPrompt,
-      messages: claudeMsgs
+      messages: chatMsgs,
+      maxTokens: MAX_OUTPUT_TOKENS
     })
-    reply = resp.content
-      .filter((c) => c.type === 'text')
-      .map((c) => c.text)
-      .join('\n')
-      .trim()
   } catch (err) {
-    console.error('[chat] Claude error:', err.message)
-    return res.status(502).json({ error: 'mentor_unavailable' })
+    console.error('[chat] LLM error:', err.message)
+    // 교사 키가 무효화된 경우 (할당량 초과, 잘못된 키 등)
+    return res.status(502).json({ error: 'mentor_unavailable', message: '지금 멘토가 답을 할 수 없는 상태야. 잠시 뒤 다시 시도해 줘.' })
   }
 
-  // 위기 감지 시 답변에 핫라인 안내 덧붙이기
   let finalReply = reply
   if (crisis.flagged) {
     finalReply = reply + '\n\n' + crisisResponseText(crisis.category)
   }
 
-  // 멘토 응답 저장
   await messages.create({
     conversationId: conv.id,
     studentId: student.id,
@@ -154,7 +165,6 @@ router.get('/history/:conversationId', require_('student'), async (req, res) => 
 
 async function extractInsightAsync({ conversationId, studentId, retreatId, mentorId, text, crisis }) {
   try {
-    // 빠른 키워드 기반 분류 (비용 0, 충분한 MVP 품질)
     const categories = []
     if (/(가족|아빠|엄마|부모|형|누나|동생)/.test(text)) categories.push('family')
     if (/(친구|따돌|왕따|외로|혼자)/.test(text)) categories.push('friendship')
@@ -171,13 +181,8 @@ async function extractInsightAsync({ conversationId, studentId, retreatId, mento
 
     for (const category of categories) {
       await collection('insights').create({
-        conversationId,
-        studentId,
-        retreatId,
-        mentorId,
-        category,
-        sentiment,
-        crisis: crisis.flagged,
+        conversationId, studentId, retreatId, mentorId,
+        category, sentiment, crisis: crisis.flagged,
         extractedAt: Date.now()
       })
     }

@@ -14,6 +14,7 @@ import studentRoutes from './routes/student.js'
 import chatRoutes from './routes/chat.js'
 import insightsRoutes from './routes/insights.js'
 import adminRoutes from './routes/admin.js'
+import settingsRoutes from './routes/settings.js'
 
 dotenv.config()
 
@@ -40,6 +41,7 @@ app.use('/api/student', studentRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/insights', insightsRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/settings', settingsRoutes)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now(), env: IS_VERCEL ? 'vercel' : 'local' }))
 
