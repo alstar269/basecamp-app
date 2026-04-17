@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>대시보드 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="container wide">
+    <div class="page-header">
+      <div class="title">🏕️ 교사 대시보드</div>
+      <a href="#" class="btn-ghost caption" id="logout">로그아웃</a>
+    </div>
+
+    <div id="profile" class="caption mb-16"></div>
+
+    <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" id="new-retreat" style="flex:0 1 auto;">+ 새 수련회 등록</button>
+      <select class="input" id="retreat-select" style="flex:1; min-height: 40px; font-size: 14px;"></select>
+    </div>
+
+    <div class="alert-banner">
+      ℹ 5명 미만 카테고리는 개인정보 보호를 위해 <strong>자동으로 숨겨집니다</strong>. 학생 대화 원문은 교사도 볼 수 없어요.
+    </div>
+
+    <div id="dash"></div>
+  </div>
+
+  <script type="module">
+    import { api, session, toast } from '/js/common.js'
+    if (!session.get('teacher')) location.href = '/teacher/login.html'
+    const token = session.get('teacher')
+
+    document.getElementById('logout').addEventListener('click', (e) => {
+      e.preventDefault()
+      session.clear('teacher')
+      location.href = '/'
+    })
+
+    const MENTOR_NAME = {
+      david:'다윗', esther:'에스더', paul:'바울', joseph:'요셉',
+      ruth:'룻', daniel:'다니엘', jacob:'야곱', peter:'베드로'
+    }
+    const CATEGORY_LABEL = {
+      family:'가족', friendship:'우정/관계', academic:'진로/학업', faith:'신앙',
+      anxiety:'불안/걱정', identity:'자기정체성', general:'일반'
+    }
+    const CRISIS_LABEL = { 'self-harm':'자해·자살 징후', abuse:'학대·폭력 언급', distress:'심한 좌절·절망' }
+
+    async function init() {
+      const me = await api.request('/api/auth/teacher/me', { token })
+      document.getElementById('profile').innerHTML =
+        `${me.name} · ${me.churchName} <span style="color: ${me.churchStatus === 'approved' ? 'var(--success)' : 'var(--warning)'}">● ${me.churchStatus === 'approved' ? '승인됨' : '관리자 승인 대기중'}</span>`
+
+      const retreats = await api.request('/api/code/retreats', { token })
+      const sel = document.getElementById('retreat-select')
+      if (retreats.length === 0) {
+        sel.innerHTML = '<option>등록된 수련회 없음 — 새로 만들어보세요</option>'
+        renderEmpty()
+      } else {
+        sel.innerHTML = retreats.map((r) => `<option value="${r.id}">${r.title} (${r.startDate} ~ ${r.endDate})</option>`).join('')
+        sel.addEventListener('change', () => loadDashboard(sel.value))
+        loadDashboard(sel.value)
+      }
+    }
+
+    function renderEmpty() {
+      document.getElementById('dash').innerHTML = `
+        <div class="card text-center" style="padding: 40px 20px;">
+          <div style="font-size: 48px">🏕️</div>
+          <h2 class="mt-8">아직 수련회가 없어요</h2>
+          <p class="body" style="color: var(--neutral-700)">"+ 새 수련회 등록" 버튼으로 시작해보세요</p>
+        </div>
+      `
+    }
+
+    async function loadDashboard(retreatId) {
+      if (!retreatId) return
+      const dash = document.getElementById('dash')
+      dash.innerHTML = '<div class="card text-center"><span class="spinner"></span></div>'
+      try {
+        const r = await api.request(`/api/insights/dashboard/${retreatId}`, { token })
+        render(r)
+      } catch (e) {
+        dash.innerHTML = '<div class="card error-msg">대시보드 로드 실패</div>'
+      }
+    }
+
+    function render({ retreat, insights }) {
+      const {
+        totalStudents, activeStudents, participationRate,
+        categoryCounts, mentorPreference, sentimentTrend, crisisAlerts
+      } = insights
+
+      const crisisVisible = crisisAlerts.filter((a) => !a.hidden)
+      const crisisHidden = crisisAlerts.filter((a) => a.hidden)
+
+      const maxMentor = Math.max(1, ...mentorPreference.map((m) => m.count))
+      const maxCategory = Math.max(1, ...categoryCounts.filter((c) => !c.hidden).map((c) => c.count || 0))
+
+      const sentHtml = sentimentTrend.length === 0 ? '<p class="caption">아직 데이터가 없어요</p>' :
+        sentimentTrend.map((s) => `
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <div class="caption" style="width: 80px">${s.day}</div>
+            <div style="flex:1">
+              <div class="bar"><div class="bar-fill" style="width: ${Math.max(5, (s.avg + 2) * 25)}%"></div></div>
+            </div>
+            <div class="caption" style="width: 40px; text-align: right;">${s.avg > 0.3 ? '☀️' : s.avg > -0.3 ? '⛅' : s.avg > -1 ? '🌧️' : '⛈️'}</div>
+          </div>
+        `).join('')
+
+      document.getElementById('dash').innerHTML = `
+        <div class="card">
+          <h2>📍 ${retreat.title}</h2>
+          <p class="caption">${retreat.startDate} ~ ${retreat.endDate} · 예상 ${retreat.expectedParticipants}명</p>
+          <div class="mt-8 caption">입장코드: <strong style="font-size: 18px; color: var(--primary-500); letter-spacing: 2px;">${(retreat.inviteCode?.code) || '—'}</strong></div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="stat-card">
+            <div class="label">참여율</div>
+            <div class="value">${Math.round(participationRate * 100)}%</div>
+            <div class="sub">${activeStudents}/${totalStudents}명 대화 시작</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">위기 신호 알림</div>
+            <div class="value ${crisisVisible.length > 0 ? 'alert' : ''}">${crisisVisible.reduce((s, a) => s + a.count, 0)}</div>
+            <div class="sub">카테고리만 표시, 원문 비공개</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>💭 고민 영역 분포</h2>
+          <p class="caption mb-16">학생들이 털어놓은 주제 (중복 가능)</p>
+          ${categoryCounts.length === 0 ? '<p class="caption">아직 데이터가 없어요</p>' :
+            categoryCounts.map((c) => c.hidden
+              ? `<div style="display:flex; justify-content:space-between; padding: 6px 0;"><span>${CATEGORY_LABEL[c.category] || c.category}</span><span class="caption">🔒 소수 응답 (비공개)</span></div>`
+              : `<div style="margin-bottom: 8px">
+                  <div style="display:flex; justify-content:space-between;"><span>${CATEGORY_LABEL[c.category] || c.category}</span><strong>${c.count}명</strong></div>
+                  <div class="bar"><div class="bar-fill" style="width: ${(c.count / maxCategory) * 100}%"></div></div>
+                </div>`
+            ).join('')}
+        </div>
+
+        <div class="card">
+          <h2>⛺ 멘토별 선호도</h2>
+          ${mentorPreference.length === 0 ? '<p class="caption">아직 데이터가 없어요</p>' :
+            mentorPreference.map((m) => `
+              <div style="margin-bottom: 8px">
+                <div style="display:flex; justify-content:space-between;"><span>${MENTOR_NAME[m.mentorId] || m.mentorId}</span><strong>${m.count}회</strong></div>
+                <div class="bar"><div class="bar-fill" style="width: ${(m.count / maxMentor) * 100}%"></div></div>
+              </div>
+            `).join('')}
+        </div>
+
+        <div class="card">
+          <h2>🌤️ 감정 트렌드 (일자별)</h2>
+          ${sentHtml}
+        </div>
+
+        <div class="card" style="background: ${crisisVisible.length > 0 ? '#FDECEC' : 'white'}">
+          <h2>⚠️ 위기 신호 알림</h2>
+          <p class="caption mb-16">학생의 원문 메시지는 <strong>절대 표시되지 않습니다</strong>. 아래는 카테고리별 집계만 보여줘요.</p>
+          ${crisisVisible.length === 0
+            ? '<p class="success-msg">✓ 현재 보고된 위기 신호가 없어요</p>'
+            : crisisVisible.map((a) => `
+              <div class="danger-banner">
+                <strong>${CRISIS_LABEL[a.category] || a.category}</strong> · ${a.count}건
+                <br /><span class="caption">→ <a href="/teacher/guide.html?cat=${a.category}" style="color: var(--primary-500)">상담 가이드 보기</a></span>
+              </div>`).join('')}
+          ${crisisHidden.length > 0 ? `<p class="caption mt-8">🔒 소수 사례 ${crisisHidden.length}건은 개인정보 보호를 위해 비공개 (관리자에게만 에스컬레이션)</p>` : ''}
+        </div>
+      `
+    }
+
+    // 새 수련회 등록 모달
+    document.getElementById('new-retreat').addEventListener('click', () => {
+      const html = `
+        <div class="modal-backdrop" id="rt-modal">
+          <div class="modal">
+            <h2 style="color: var(--neutral-900)">🏕️ 새 수련회 등록</h2>
+            <div class="field mt-16">
+              <label class="input-label">수련회 이름</label>
+              <input class="input" id="rt-title" placeholder="예: 2026 여름 고등부 수련회" />
+            </div>
+            <div class="field">
+              <label class="input-label">시작일</label>
+              <input class="input" id="rt-start" type="date" />
+            </div>
+            <div class="field">
+              <label class="input-label">종료일</label>
+              <input class="input" id="rt-end" type="date" />
+            </div>
+            <div class="field">
+              <label class="input-label">예상 참석 인원</label>
+              <input class="input" id="rt-count" type="number" min="1" max="2000" value="50" />
+            </div>
+            <p class="error-msg hidden" id="rt-err"></p>
+            <div style="display:flex; gap:8px; margin-top:16px;">
+              <button class="btn btn-outline btn-sm" onclick="document.getElementById('rt-modal').remove()">취소</button>
+              <button class="btn btn-primary btn-sm" id="rt-submit">등록 · 코드 받기</button>
+            </div>
+          </div>
+        </div>
+      `
+      document.body.insertAdjacentHTML('beforeend', html)
+      document.getElementById('rt-submit').addEventListener('click', async () => {
+        const title = document.getElementById('rt-title').value.trim()
+        const startDate = document.getElementById('rt-start').value
+        const endDate = document.getElementById('rt-end').value
+        const expectedParticipants = Number(document.getElementById('rt-count').value)
+        const err = document.getElementById('rt-err')
+        if (!title || !startDate || !endDate || !expectedParticipants) { err.textContent='모두 입력해 주세요'; err.classList.remove('hidden'); return }
+        try {
+          const r = await api.request('/api/code/retreat', { method: 'POST', token, body: { title, startDate, endDate, expectedParticipants } })
+          document.getElementById('rt-modal').remove()
+          toast(`입장코드 발급: ${r.code.code}`)
+          init()
+        } catch (e) {
+          err.textContent = '등록 중 문제가 생겼어요.'
+          err.classList.remove('hidden')
+        }
+      })
+    })
+
+    init().catch(() => { session.clear('teacher'); location.href = '/teacher/login.html' })
+  </script>
+</body>
+</html>

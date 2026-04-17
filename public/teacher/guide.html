@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>상담 가이드 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <a href="/teacher/dashboard.html" class="back">←</a>
+      <div class="title">📖 상담 가이드</div>
+      <div style="width: 40px"></div>
+    </div>
+
+    <div id="content"></div>
+
+    <div class="card mt-16">
+      <h2>📞 전문 상담 핫라인</h2>
+      <div class="hotline-list">
+        <a class="hotline" href="tel:1388"><div><span class="num">1388</span> 청소년전화</div><div class="desc">24시간 청소년 상담</div></a>
+        <a class="hotline" href="tel:1393"><div><span class="num">1393</span> 자살예방상담</div><div class="desc">24시간 자살예방</div></a>
+        <a class="hotline" href="tel:1577-0199"><div><span class="num">1577-0199</span> 정신건강</div><div class="desc">위기상담</div></a>
+        <a class="hotline" href="tel:1366"><div><span class="num">1366</span> 여성긴급전화</div><div class="desc">가정폭력·성폭력</div></a>
+        <a class="hotline" href="tel:112"><div><span class="num">112</span> 경찰</div><div class="desc">긴급 신고</div></a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GUIDES = {
+      'self-harm': {
+        title: '자해·자살 징후가 보일 때',
+        points: [
+          '판단하지 않고 먼저 들어주세요. "네가 힘들다는 걸 알겠어"',
+          '"왜 그래?" 대신 "지금 많이 힘들지?"로 공감부터',
+          '안전 질문은 직접 확인: "혹시 너를 해치고 싶은 생각이 드니?" (회피보다 직접 물어보기)',
+          '혼자 두지 말고, 신뢰할 어른이나 전문가(1393)에게 즉시 연결',
+          '약속된 다음 만남을 잡아주세요 — "오늘 저녁에 다시 이야기하자"'
+        ]
+      },
+      'abuse': {
+        title: '학대·폭력 언급이 있을 때',
+        points: [
+          '안전 확보 최우선 — 지금 위험한지부터 확인',
+          '비밀 보장 약속은 신중히. 법적 신고 의무가 있음을 정중히 설명',
+          '아동학대 신고: 112 또는 아동보호전문기관 (129)',
+          '가정폭력: 여성긴급전화 1366',
+          '학교 내 사안은 학교 상담선생님과 함께 대응 계획 수립'
+        ]
+      },
+      'distress': {
+        title: '심한 좌절·절망이 보일 때',
+        points: [
+          '"별 거 아냐"라는 위로는 금물 — 감정을 축소하지 말기',
+          '짧은 질문으로 이야기를 이어가세요: "그래서?", "그때 어땠어?"',
+          '즉각적 해결보다 "함께 있어주기"가 먼저',
+          '필요하면 전문 상담을 권유하되 낙인감 없이',
+          '경과 관찰 — 1주일 후 다시 확인'
+        ]
+      }
+    }
+    const cat = new URLSearchParams(location.search).get('cat') || 'distress'
+    const g = GUIDES[cat] || GUIDES.distress
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h2>${g.title}</h2>
+        <ul style="margin: 12px 0; padding-left: 20px;">
+          ${g.points.map((p) => `<li style="margin-bottom: 10px; line-height: 1.5;">${p}</li>`).join('')}
+        </ul>
+      </div>
+    `
+  </script>
+</body>
+</html>

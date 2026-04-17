@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>관리자 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="container wide">
+    <div class="page-header">
+      <div class="title">🛠️ 관리자 콘솔</div>
+      <a href="#" class="btn-ghost caption" id="logout">로그아웃</a>
+    </div>
+
+    <h2>📊 전체 통계</h2>
+    <div class="dashboard-grid" id="stats"></div>
+
+    <h2 class="mt-24">⛪ 교회 승인</h2>
+    <div id="churches"></div>
+
+    <h2 class="mt-24">👥 멘토 목록</h2>
+    <div id="mentors"></div>
+
+    <h2 class="mt-24">🗑️ 데이터 보존 관리</h2>
+    <div class="card">
+      <p class="body">수련회 종료 +30일 경과한 데이터는 자동으로 파기됩니다.</p>
+      <p class="caption mb-16">수동으로 지금 실행하려면 아래 버튼을 눌러주세요 (주로 디버깅 용도).</p>
+      <button class="btn btn-outline btn-sm" id="retention">지금 보존 스윕 실행</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { api, session, toast } from '/js/common.js'
+    if (!session.get('admin')) location.href = '/admin/login.html'
+    const token = session.get('admin')
+
+    document.getElementById('logout').addEventListener('click', (e) => {
+      e.preventDefault()
+      session.clear('admin')
+      location.href = '/'
+    })
+
+    async function load() {
+      try {
+        const [stats, churches, mentors] = await Promise.all([
+          api.request('/api/admin/stats', { token }),
+          api.request('/api/admin/churches', { token }),
+          api.request('/api/admin/mentors', { token })
+        ])
+
+        document.getElementById('stats').innerHTML = `
+          <div class="stat-card"><div class="label">교회</div><div class="value">${stats.churches}</div><div class="sub">승인 대기 ${stats.churchesPending}</div></div>
+          <div class="stat-card"><div class="label">수련회</div><div class="value">${stats.retreats}</div><div class="sub">진행 중 ${stats.retreatsActive}</div></div>
+          <div class="stat-card"><div class="label">학생 세션</div><div class="value">${stats.students}</div><div class="sub">대화 ${stats.conversations}개</div></div>
+          <div class="stat-card"><div class="label">위기 알림</div><div class="value ${stats.crisisAlerts > 0 ? 'alert' : ''}">${stats.crisisAlerts}</div><div class="sub">집계 건수</div></div>
+        `
+
+        const statusColor = { pending: 'var(--warning)', approved: 'var(--success)', rejected: 'var(--danger)' }
+        const statusLabel = { pending: '승인 대기', approved: '승인됨', rejected: '반려' }
+        document.getElementById('churches').innerHTML = churches.length === 0
+          ? '<div class="card caption">등록된 교회가 없습니다.</div>'
+          : churches.map((c) => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              <div>
+                <strong>${c.name}</strong>
+                <div class="caption">등록: ${new Date(c.createdAt).toLocaleDateString('ko-KR')} · <span style="color:${statusColor[c.status]}">● ${statusLabel[c.status]}</span></div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                ${c.status === 'pending' ? `
+                  <button class="btn btn-sm btn-primary" onclick="approve('${c.id}')">승인</button>
+                  <button class="btn btn-sm btn-outline" onclick="reject('${c.id}')">반려</button>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')
+
+        document.getElementById('mentors').innerHTML = `
+          <div class="mentor-grid">
+            ${mentors.map((m) => `
+              <div class="mentor-card">
+                <div class="icon" style="background:${m.color}">${m.icon}</div>
+                <div class="name">${m.name}</div>
+                <div class="title">${m.title}</div>
+                <div class="tags">${m.tags.map((t) => `<span class="chip">${t}</span>`).join('')}</div>
+              </div>
+            `).join('')}
+          </div>
+          <p class="caption mt-8">ℹ 멘토 프롬프트 편집은 현재 코드 기반 (<code>lib/mentors.js</code>). 추후 UI 제공 예정.</p>
+        `
+      } catch (e) {
+        session.clear('admin')
+        location.href = '/admin/login.html'
+      }
+    }
+
+    window.approve = async (id) => {
+      await api.request(`/api/admin/churches/${id}/approve`, { method: 'POST', token })
+      toast('승인 완료')
+      load()
+    }
+    window.reject = async (id) => {
+      await api.request(`/api/admin/churches/${id}/reject`, { method: 'POST', token })
+      toast('반려 처리됨')
+      load()
+    }
+    document.getElementById('retention').addEventListener('click', async () => {
+      const r = await api.request('/api/admin/retention/run', { method: 'POST', token })
+      toast(`파기 대상 ${r.purged}건 처리`)
+    })
+
+    load()
+  </script>
+</body>
+</html>

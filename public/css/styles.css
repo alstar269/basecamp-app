@@ -1,0 +1,251 @@
+/* 내 마음의 베이스캠프 — 디자인 시스템 */
+:root {
+  --primary-500: #8B7AD9;
+  --primary-400: #A595E8;
+  --primary-300: #B8A9F0;
+  --primary-100: #E8E1FA;
+  --primary-50: #F4F0FC;
+  --secondary-500: #7EC4A5;
+  --secondary-300: #ABDBC4;
+  --accent-warm: #F4B860;
+  --accent-star: #FFE7A3;
+  --success: #6BBF8E;
+  --warning: #EDA65A;
+  --danger: #E47373;
+  --neutral-900: #2A2640;
+  --neutral-700: #4A4560;
+  --neutral-500: #7A7592;
+  --neutral-300: #BCB8CC;
+  --neutral-100: #F7F5FC;
+  --neutral-0: #FFFFFF;
+  --shadow-sm: 0 1px 2px rgba(42, 38, 64, 0.06);
+  --shadow-md: 0 4px 16px rgba(139, 122, 217, 0.12);
+  --shadow-lg: 0 12px 32px rgba(139, 122, 217, 0.18);
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  color: var(--neutral-900);
+  background: linear-gradient(180deg, #EFE7FA 0%, #E7F5EE 100%);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+a { color: var(--primary-500); text-decoration: none; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font: inherit; color: inherit; }
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+  min-height: 100vh;
+  position: relative;
+}
+.container.wide { max-width: 1080px; }
+
+/* ── Typography ───────────────────────────── */
+.display { font-size: 28px; font-weight: 700; line-height: 1.3; }
+h1 { font-size: 22px; font-weight: 700; line-height: 1.4; margin-bottom: 8px; }
+h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
+.body-lg { font-size: 16px; font-weight: 500; }
+.body { font-size: 14px; }
+.caption { font-size: 12px; font-weight: 500; color: var(--neutral-500); }
+
+/* ── Buttons ──────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; min-height: 52px; padding: 14px 20px;
+  border-radius: var(--radius-md); font-weight: 600; font-size: 16px;
+  transition: transform 0.1s, box-shadow 0.2s, background 0.2s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-400) 100%); color: white; box-shadow: var(--shadow-md); }
+.btn-primary:hover { box-shadow: var(--shadow-lg); }
+.btn-outline { background: white; border: 1.5px solid var(--primary-300); color: var(--neutral-900); }
+.btn-outline:hover { background: var(--primary-50); }
+.btn-ghost { background: transparent; color: var(--primary-500); min-height: 40px; padding: 8px 12px; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-sm { min-height: 36px; padding: 8px 16px; font-size: 14px; }
+
+/* ── Inputs ──────────────────────────────── */
+.input {
+  width: 100%; min-height: 48px; padding: 12px 16px;
+  border: 1.5px solid var(--neutral-300); border-radius: var(--radius-md);
+  background: white; font-size: 16px; transition: border 0.2s;
+}
+.input:focus { outline: none; border-color: var(--primary-500); }
+.input-label { display: block; font-size: 13px; font-weight: 500; color: var(--neutral-700); margin-bottom: 6px; }
+.field { margin-bottom: 16px; }
+
+/* OTP/코드 입력 칸 */
+.code-input-group { display: flex; gap: 8px; justify-content: center; margin: 20px 0; }
+.code-input-group input {
+  width: 44px; height: 56px; text-align: center; font-size: 24px; font-weight: 700;
+  border: 2px solid var(--neutral-300); border-radius: var(--radius-md);
+  background: white; text-transform: uppercase;
+}
+.code-input-group input:focus { outline: none; border-color: var(--primary-500); }
+.code-input-group input.error { border-color: var(--danger); animation: shake 0.3s; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* ── Cards ───────────────────────────────── */
+.card {
+  background: white; border-radius: var(--radius-lg); padding: 20px;
+  box-shadow: var(--shadow-sm); margin-bottom: 16px;
+}
+.card-gradient { background: linear-gradient(135deg, var(--primary-100) 0%, var(--neutral-0) 100%); }
+
+/* 멘토 카드 */
+.mentor-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.mentor-card {
+  background: white; border-radius: var(--radius-lg); padding: 16px;
+  box-shadow: var(--shadow-sm); cursor: pointer; text-align: center;
+  transition: transform 0.15s, box-shadow 0.2s; position: relative;
+  border: 2px solid transparent;
+}
+.mentor-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.mentor-card.recommended { border-color: var(--accent-warm); }
+.mentor-card .icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; margin: 0 auto 12px;
+}
+.mentor-card .name { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+.mentor-card .title { font-size: 13px; color: var(--neutral-700); margin-bottom: 8px; }
+.mentor-card .tags { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-bottom: 8px; }
+.chip {
+  display: inline-block; padding: 3px 9px; font-size: 11px; font-weight: 500;
+  background: var(--primary-100); color: var(--primary-500); border-radius: var(--radius-full);
+}
+.chip-warm { background: #FFE8CB; color: #C47B1B; }
+.recommend-badge {
+  position: absolute; top: 8px; right: 8px; font-size: 16px;
+}
+
+/* ── Chat bubbles ───────────────────────── */
+.chat-wrap { padding-bottom: 120px; }
+.bubble { max-width: 82%; padding: 12px 14px; border-radius: 16px; margin-bottom: 10px; font-size: 15px; word-break: break-word; white-space: pre-wrap; }
+.bubble-user { background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-400) 100%); color: white; border-bottom-right-radius: 4px; margin-left: auto; }
+.bubble-mentor { background: var(--accent-star); color: var(--neutral-900); border-bottom-left-radius: 4px; font-family: 'Gowun Dodum', 'Pretendard Variable', sans-serif; }
+.bubble-system { background: var(--primary-100); color: var(--neutral-700); font-size: 13px; text-align: center; margin: 8px auto; max-width: 90%; }
+.verse-card {
+  background: white; border-left: 3px solid var(--accent-warm);
+  padding: 12px 14px; border-radius: var(--radius-md); margin: 8px 0 12px;
+  box-shadow: var(--shadow-sm);
+}
+.verse-card .verse-text { font-family: 'Noto Serif KR', serif; font-size: 14px; font-style: italic; margin-bottom: 6px; }
+.verse-card .verse-ref { font-size: 12px; color: var(--neutral-500); font-weight: 500; }
+
+.chat-input-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 12px 16px 16px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+  border-top: 1px solid var(--primary-100);
+}
+.chat-input-bar form { display: flex; gap: 8px; max-width: 480px; margin: 0 auto; }
+.chat-input-bar textarea {
+  flex: 1; border: 1.5px solid var(--neutral-300); border-radius: var(--radius-lg);
+  padding: 10px 14px; resize: none; min-height: 44px; max-height: 120px; font-size: 15px;
+}
+.chat-input-bar textarea:focus { outline: none; border-color: var(--primary-500); }
+.chat-send {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-400));
+  color: white; border-radius: var(--radius-full); min-width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center; font-weight: 600;
+}
+
+/* ── Header ──────────────────────────────── */
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.page-header .back {
+  font-size: 22px; color: var(--neutral-700); padding: 6px 10px;
+}
+.page-header .title { font-weight: 600; font-size: 16px; }
+.page-header .action { color: var(--danger); font-weight: 600; font-size: 14px; }
+
+/* ── Landing ─────────────────────────────── */
+.landing-hero {
+  padding-top: 40px; text-align: center;
+}
+.landing-hero .illust {
+  font-size: 72px; margin-bottom: 8px;
+}
+.landing-hero .sparkle { font-size: 24px; letter-spacing: 8px; display: block; margin-top: -8px; }
+.landing-title {
+  font-size: 32px; font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin: 16px 0 8px;
+}
+.landing-sub { color: var(--neutral-700); font-size: 15px; }
+.landing-mini { color: var(--neutral-500); font-size: 13px; margin-top: 4px; margin-bottom: 40px; }
+.landing-actions { display: flex; flex-direction: column; gap: 12px; }
+.landing-bottom { margin-top: 24px; text-align: center; }
+.landing-bottom .link { color: var(--secondary-500); font-size: 14px; font-weight: 600; padding: 12px; display: block; }
+.landing-bottom .admin-link { color: var(--neutral-500); font-size: 12px; margin-top: 12px; display: inline-block; }
+.footer { text-align: center; color: var(--neutral-500); font-size: 11px; margin-top: 40px; padding: 20px 0; }
+
+/* ── Dashboard (교사) ────────────────────── */
+.dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: white; padding: 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.stat-card .label { font-size: 12px; color: var(--neutral-500); margin-bottom: 6px; }
+.stat-card .value { font-size: 24px; font-weight: 700; color: var(--primary-500); }
+.stat-card .value.alert { color: var(--danger); }
+.stat-card .sub { font-size: 11px; color: var(--neutral-500); margin-top: 4px; }
+
+.bar { height: 10px; background: var(--neutral-100); border-radius: var(--radius-full); overflow: hidden; margin: 4px 0 8px; }
+.bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary-400), var(--primary-500)); border-radius: var(--radius-full); transition: width 0.4s; }
+
+.alert-banner {
+  background: #FFF3E5; border: 1px solid #FFD9A8; padding: 12px 14px;
+  border-radius: var(--radius-md); color: #8F5A12; font-size: 13px; margin-bottom: 16px;
+}
+.danger-banner {
+  background: #FDECEC; border: 1px solid #F5C0C0; padding: 12px 14px;
+  border-radius: var(--radius-md); color: #9A3535; font-size: 13px; margin-bottom: 16px;
+}
+
+/* ── Misc ────────────────────────────────── */
+.error-msg { color: var(--danger); font-size: 13px; margin-top: 6px; }
+.success-msg { color: var(--success); font-size: 13px; margin-top: 6px; }
+.hidden { display: none !important; }
+.text-center { text-align: center; }
+.mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; }
+.mb-16 { margin-bottom: 16px; } .mb-24 { margin-bottom: 24px; }
+
+/* ── SOS 버튼 (학생 화면 고정) ────────────── */
+.sos-btn {
+  position: fixed; top: 16px; right: 16px;
+  background: var(--danger); color: white; width: 44px; height: 44px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: var(--shadow-md); z-index: 50;
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(42, 38, 64, 0.5);
+  display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100;
+}
+.modal {
+  background: white; border-radius: var(--radius-lg); padding: 24px;
+  max-width: 400px; width: 100%; box-shadow: var(--shadow-lg);
+}
+.modal h2 { color: var(--danger); margin-bottom: 12px; }
+.hotline-list { margin: 16px 0; }
+.hotline { display: block; padding: 12px 14px; background: var(--primary-50); border-radius: var(--radius-md); margin-bottom: 8px; color: var(--neutral-900); font-weight: 600; }
+.hotline .num { color: var(--primary-500); font-weight: 700; }
+.hotline .desc { font-size: 12px; font-weight: 400; color: var(--neutral-500); margin-top: 2px; }
+
+/* Loading */
+.spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--neutral-100); border-top-color: var(--primary-500); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

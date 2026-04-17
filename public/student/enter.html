@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>입장 코드 입력 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <a href="/" class="back">←</a>
+      <div class="title">베이스캠프 입장</div>
+      <div style="width: 40px"></div>
+    </div>
+
+    <div class="text-center mb-24">
+      <div style="font-size: 56px">🏕️</div>
+      <h1 class="mt-16">수련회 코드를 입력해 주세요</h1>
+      <p class="body" style="color: var(--neutral-700)">선생님이 공유하신 6자리 코드예요</p>
+    </div>
+
+    <div class="code-input-group" id="code-group">
+      <input maxlength="1" aria-label="1" />
+      <input maxlength="1" aria-label="2" />
+      <input maxlength="1" aria-label="3" />
+      <input maxlength="1" aria-label="4" />
+      <input maxlength="1" aria-label="5" />
+      <input maxlength="1" aria-label="6" />
+    </div>
+
+    <p class="error-msg text-center hidden" id="err"></p>
+
+    <button class="btn btn-primary mt-16" id="submit">입장하기 →</button>
+
+    <div class="mt-24 text-center">
+      <a href="#" class="btn-ghost caption" onclick="alert('수련회 코드는 담당 교사나 목사님께 문의하세요. 코드는 보통 카카오톡이나 포스터로 공유됩니다.'); return false;">코드를 모르겠어요</a>
+    </div>
+
+    <div class="card mt-24" style="background: var(--primary-50); font-size: 13px; color: var(--neutral-700);">
+      <strong style="color: var(--primary-500)">🔒 개인정보는 안전해요</strong><br />
+      이름·연락처를 묻지 않아요.<br />
+      대화는 수련회 종료 후 한 달 뒤 자동으로 사라져요.<br />
+      위기 신호는 선생님께 카테고리만 알려져요 (내용은 비공개).
+    </div>
+  </div>
+
+  <script type="module">
+    import { api, session } from '/js/common.js'
+    const inputs = document.querySelectorAll('#code-group input')
+    const err = document.getElementById('err')
+    const submit = document.getElementById('submit')
+
+    inputs.forEach((inp, idx) => {
+      inp.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+        if (e.target.value && idx < inputs.length - 1) inputs[idx + 1].focus()
+        inp.classList.remove('error')
+        err.classList.add('hidden')
+      })
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !inp.value && idx > 0) inputs[idx - 1].focus()
+        if (e.key === 'Enter') submit.click()
+      })
+      inp.addEventListener('paste', (e) => {
+        e.preventDefault()
+        const pasted = (e.clipboardData.getData('text') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+        pasted.split('').forEach((ch, i) => { if (inputs[i]) inputs[i].value = ch })
+        if (inputs[pasted.length - 1]) inputs[pasted.length - 1].focus()
+      })
+    })
+
+    submit.addEventListener('click', async () => {
+      const code = Array.from(inputs).map((i) => i.value).join('')
+      if (code.length < 6) {
+        err.textContent = '6자리 코드를 모두 입력해 주세요'
+        err.classList.remove('hidden')
+        inputs.forEach((i) => i.classList.add('error'))
+        return
+      }
+      submit.disabled = true
+      submit.innerHTML = '<span class="spinner"></span>'
+      try {
+        const r = await api.request('/api/code/verify', { method: 'POST', body: { code } })
+        sessionStorage.setItem('basecamp.enter.code', code)
+        sessionStorage.setItem('basecamp.enter.retreat', r.retreatTitle)
+        location.href = '/student/setup.html'
+      } catch (e) {
+        const messages = {
+          not_found: '코드를 찾을 수 없어요. 다시 확인해 주세요.',
+          expired: '만료된 코드예요. 담당 선생님께 문의하세요.',
+          not_yet_active: '아직 활성화되지 않은 코드예요.',
+          full: '참여 인원이 가득 찼어요.',
+          retreat_inactive: '비활성화된 수련회예요.'
+        }
+        err.textContent = messages[e.message] || '코드 확인 중 문제가 생겼어요.'
+        err.classList.remove('hidden')
+        inputs.forEach((i) => i.classList.add('error'))
+      } finally {
+        submit.disabled = false
+        submit.textContent = '입장하기 →'
+      }
+    })
+
+    inputs[0].focus()
+  </script>
+</body>
+</html>

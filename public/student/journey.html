@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>내 여정 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <a href="/student/mentors.html" class="back">←</a>
+      <div class="title">🗺️ 내 등반 일지</div>
+      <div style="width: 40px"></div>
+    </div>
+
+    <div id="content" class="mt-16">
+      <div class="card text-center">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { api, session } from '/js/common.js'
+    if (!session.get('student')) location.href = '/student/enter.html'
+
+    const MENTOR_NAME = {
+      david:'다윗', esther:'에스더', paul:'바울', joseph:'요셉',
+      ruth:'룻', daniel:'다니엘', jacob:'야곱', peter:'베드로'
+    }
+    const MENTOR_ICON = {
+      david:'🎵', esther:'👑', paul:'✉️', joseph:'🌈',
+      ruth:'🌾', daniel:'🦁', jacob:'🪜', peter:'🎣'
+    }
+
+    try {
+      const [me, journey] = await Promise.all([
+        api.request('/api/student/me', { token: session.get('student') }),
+        api.request('/api/student/journey', { token: session.get('student') })
+      ])
+      const c = document.getElementById('content')
+      if (journey.length === 0) {
+        c.innerHTML = `
+          <div class="card text-center">
+            <div style="font-size: 48px">🌱</div>
+            <h2 class="mt-8">아직 대화가 없어요</h2>
+            <p class="body" style="color: var(--neutral-700)">첫 멘토를 만나볼까요?</p>
+            <a class="btn btn-primary mt-16" href="/student/mentors.html">멘토 선택하러 가기</a>
+          </div>
+        `
+      } else {
+        c.innerHTML = `
+          <p class="caption mb-16">닉네임: <strong>${me.nickname}</strong> · 수련회: ${me.retreatTitle || ''}</p>
+          <div>${journey.map((j) => `
+            <div class="card" onclick="location.href='/student/chat.html?mentor=${j.mentorId}&resume=${j.id}'" style="cursor: pointer">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div style="font-size:32px">${MENTOR_ICON[j.mentorId] || '⛺'}</div>
+                <div>
+                  <strong>${MENTOR_NAME[j.mentorId] || j.mentorId}</strong>
+                  <div class="caption">메시지 ${j.messageCount}개 · ${new Date(j.startedAt).toLocaleString('ko-KR')}</div>
+                </div>
+              </div>
+            </div>
+          `).join('')}</div>
+          <div class="card mt-24" style="background: var(--primary-50); font-size: 12px; color: var(--neutral-700);">
+            📅 이 대화들은 수련회 종료 후 <strong>30일 뒤 자동으로 사라져요</strong>. 간직하고 싶은 말씀은 지금 따로 기록해 두세요.
+          </div>
+        `
+      }
+    } catch (e) {
+      document.getElementById('content').innerHTML = `<div class="card"><p class="error-msg">불러오기 실패. 다시 로그인해 주세요.</p></div>`
+    }
+  </script>
+</body>
+</html>

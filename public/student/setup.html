@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>닉네임 설정 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <a href="/student/enter.html" class="back">←</a>
+      <div class="title">프로필 설정</div>
+      <div style="width: 40px"></div>
+    </div>
+
+    <div class="card card-gradient">
+      <p class="caption" id="retreat-name">수련회 정보 로딩…</p>
+      <h1 class="mt-8">어떻게 불러주면 좋을까요?</h1>
+      <p class="body" style="color: var(--neutral-700)">실명이 아닌, 편한 닉네임으로 해주세요</p>
+    </div>
+
+    <div class="field">
+      <label class="input-label">닉네임</label>
+      <input class="input" id="nickname" placeholder="예: 용감한 산악인" maxlength="20" />
+      <div class="mt-8" style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button class="chip" onclick="suggest()" type="button" id="suggest-btn">🎲 추천</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="input-label">학년</label>
+      <select class="input" id="grade">
+        <option value="">선택 안 함</option>
+        <option value="middle-1-2">중1-2</option>
+        <option value="middle-3-high-1">중3-고1</option>
+        <option value="high-2-3">고2-3</option>
+      </select>
+    </div>
+
+    <h2 class="mt-24">🌤️ 간단히 마음 체크 (선택)</h2>
+    <p class="caption mb-16">건너뛰어도 돼요</p>
+
+    <div class="field">
+      <label class="input-label">요즘 마음 날씨는?</label>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="mood-btn btn btn-outline" data-v="sunny">☀️ 맑음</button>
+        <button type="button" class="mood-btn btn btn-outline" data-v="cloudy">⛅ 흐림</button>
+        <button type="button" class="mood-btn btn btn-outline" data-v="rainy">🌧️ 비</button>
+        <button type="button" class="mood-btn btn btn-outline" data-v="storm">⛈️ 폭풍</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="input-label">대화 스타일 선호</label>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="style-btn btn btn-outline" data-v="warm">🤗 따뜻한 위로</button>
+        <button type="button" class="style-btn btn btn-outline" data-v="honest">💡 솔직한 조언</button>
+        <button type="button" class="style-btn btn btn-outline" data-v="questioning">❓ 함께 질문</button>
+      </div>
+    </div>
+
+    <p class="error-msg hidden" id="err"></p>
+    <button class="btn btn-primary mt-24" id="submit">멘토 만나러 가기 →</button>
+  </div>
+
+  <script type="module">
+    import { api, session } from '/js/common.js'
+    const code = sessionStorage.getItem('basecamp.enter.code')
+    document.getElementById('retreat-name').textContent = sessionStorage.getItem('basecamp.enter.retreat') || '수련회'
+    if (!code) location.href = '/student/enter.html'
+
+    const ADJECTIVES = ['용감한', '조용한', '따뜻한', '빛나는', '씩씩한', '다정한', '차분한', '밝은']
+    const NOUNS = ['산악인', '별지기', '모닥불', '새싹', '나침반', '여행자', '랜턴', '북극성']
+    function randomNick() {
+      return `${ADJECTIVES[Math.floor(Math.random()*ADJECTIVES.length)]} ${NOUNS[Math.floor(Math.random()*NOUNS.length)]}`
+    }
+    window.suggest = () => { document.getElementById('nickname').value = randomNick() }
+
+    let mood = null, style = null
+    document.querySelectorAll('.mood-btn').forEach((b) => b.addEventListener('click', () => {
+      mood = b.dataset.v
+      document.querySelectorAll('.mood-btn').forEach((x) => x.classList.remove('btn-primary'))
+      b.classList.remove('btn-outline')
+      b.classList.add('btn-primary')
+    }))
+    document.querySelectorAll('.style-btn').forEach((b) => b.addEventListener('click', () => {
+      style = b.dataset.v
+      document.querySelectorAll('.style-btn').forEach((x) => { x.classList.remove('btn-primary'); x.classList.add('btn-outline') })
+      b.classList.remove('btn-outline')
+      b.classList.add('btn-primary')
+    }))
+
+    document.getElementById('submit').addEventListener('click', async () => {
+      const nickname = document.getElementById('nickname').value.trim()
+      const gradeBand = document.getElementById('grade').value || undefined
+      const err = document.getElementById('err')
+      if (!nickname) { err.textContent = '닉네임을 입력해 주세요'; err.classList.remove('hidden'); return }
+      try {
+        const r = await api.request('/api/student/enter', {
+          method: 'POST',
+          body: { code, nickname, gradeBand, survey: { mood, style } }
+        })
+        session.set('student', r.token)
+        sessionStorage.setItem('basecamp.student.mood', mood || '')
+        sessionStorage.setItem('basecamp.student.style', style || '')
+        location.href = '/student/mentors.html'
+      } catch (e) {
+        err.textContent = '입장에 문제가 생겼어요. 잠시 후 다시 시도해 주세요.'
+        err.classList.remove('hidden')
+      }
+    })
+  </script>
+</body>
+</html>

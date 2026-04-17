@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>관리자 로그인 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <a href="/" class="back">←</a>
+      <div class="title">관리자</div>
+      <div style="width: 40px"></div>
+    </div>
+
+    <div class="text-center mb-24 mt-16">
+      <div style="font-size: 48px">🛡️</div>
+      <h1 class="mt-16">관리자 로그인</h1>
+      <p class="caption">교회 승인 · 멘토 콘텐츠 · 시스템 통계</p>
+    </div>
+
+    <div class="field">
+      <label class="input-label">이메일</label>
+      <input class="input" id="email" type="email" />
+    </div>
+    <div class="field">
+      <label class="input-label">비밀번호</label>
+      <input class="input" id="pw" type="password" />
+    </div>
+    <p class="error-msg hidden" id="err"></p>
+    <button class="btn btn-primary mt-8" id="submit">로그인</button>
+  </div>
+
+  <script type="module">
+    import { api, session } from '/js/common.js'
+    document.getElementById('submit').addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim()
+      const password = document.getElementById('pw').value
+      const err = document.getElementById('err')
+      try {
+        const r = await api.request('/api/auth/admin/login', { method: 'POST', body: { email, password } })
+        session.set('admin', r.token)
+        location.href = '/admin/home.html'
+      } catch {
+        err.textContent = '이메일 또는 비밀번호를 확인해 주세요.'
+        err.classList.remove('hidden')
+      }
+    })
+  </script>
+</body>
+</html>

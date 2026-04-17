@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>대화 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/gowun-dodum@5.0.8/index.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <a class="sos-btn" href="#" onclick="openSOS(); return false" aria-label="긴급 도움">🆘</a>
+  <div class="container">
+    <div class="page-header">
+      <a href="/student/mentors.html" class="back">←</a>
+      <div class="title" id="mentor-title">멘토</div>
+      <div style="width: 40px"></div>
+    </div>
+
+    <div id="chat" class="chat-wrap"></div>
+  </div>
+
+  <div class="chat-input-bar">
+    <form id="chat-form">
+      <textarea id="msg" placeholder="마음속 이야기를 편하게 들려줘…" rows="1"></textarea>
+      <button class="chat-send" type="submit" aria-label="전송">↑</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { api, session, openHotlineModal } from '/js/common.js'
+    window.openSOS = openHotlineModal
+
+    if (!session.get('student')) location.href = '/student/enter.html'
+
+    const MENTOR_INFO = {
+      david: { name:'다윗', icon:'🎵' },
+      esther: { name:'에스더', icon:'👑' },
+      paul: { name:'바울', icon:'✉️' },
+      joseph: { name:'요셉', icon:'🌈' },
+      ruth: { name:'룻', icon:'🌾' },
+      daniel: { name:'다니엘', icon:'🦁' },
+      jacob: { name:'야곱', icon:'🪜' },
+      peter: { name:'베드로', icon:'🎣' }
+    }
+    const params = new URLSearchParams(location.search)
+    const mentorId = params.get('mentor')
+    const info = MENTOR_INFO[mentorId]
+    if (!info) location.href = '/student/mentors.html'
+    document.getElementById('mentor-title').textContent = `${info.icon} ${info.name}`
+
+    const chat = document.getElementById('chat')
+    let conversationId = null
+
+    function addBubble(role, text) {
+      const div = document.createElement('div')
+      div.className = 'bubble ' + (role === 'user' ? 'bubble-user' : role === 'system' ? 'bubble-system' : 'bubble-mentor')
+      div.textContent = text
+      chat.appendChild(div)
+      window.scrollTo(0, document.body.scrollHeight)
+    }
+
+    // 첫 인사 (메시지로 저장하지 않고 UX로만)
+    addBubble('mentor', `안녕, ${info.icon} ${info.name}이야. 편하게 이야기 시작해도 돼.`)
+
+    const form = document.getElementById('chat-form')
+    const msgInput = document.getElementById('msg')
+    msgInput.addEventListener('input', () => {
+      msgInput.style.height = 'auto'
+      msgInput.style.height = Math.min(120, msgInput.scrollHeight) + 'px'
+    })
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const text = msgInput.value.trim()
+      if (!text) return
+      addBubble('user', text)
+      msgInput.value = ''
+      msgInput.style.height = 'auto'
+
+      const loading = document.createElement('div')
+      loading.className = 'bubble bubble-mentor'
+      loading.innerHTML = '<span class="spinner"></span>'
+      chat.appendChild(loading)
+
+      try {
+        const r = await api.request('/api/chat/send', {
+          method: 'POST',
+          token: session.get('student'),
+          body: { mentorId, conversationId, text }
+        })
+        conversationId = r.conversationId
+        loading.remove()
+        addBubble('mentor', r.reply)
+        if (r.crisis) {
+          addBubble('system', '⚠️ 지금 많이 힘들어 보여. 상단 🆘 버튼을 누르면 전문 상담 연락처를 볼 수 있어.')
+        }
+      } catch (err) {
+        loading.remove()
+        addBubble('system', '잠시 연결이 불안정해. 다시 시도해 줘.')
+      }
+    })
+  </script>
+</body>
+</html>

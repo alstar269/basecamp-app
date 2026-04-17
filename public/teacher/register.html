@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>우리 교회 수련회 등록 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <a href="/" class="back">←</a>
+      <div class="title">수련회 등록</div>
+      <div style="width: 40px"></div>
+    </div>
+
+    <div class="card card-gradient">
+      <div style="font-size: 40px">🏕️</div>
+      <h1 class="mt-8">우리 교회 수련회 등록하기</h1>
+      <p class="body" style="color: var(--neutral-700)">교사 계정을 만들고 바로 입장코드를 받을 수 있어요. 모두 <strong>무료</strong>입니다.</p>
+    </div>
+
+    <h2 class="mt-24">👤 교사 정보</h2>
+    <div class="field">
+      <label class="input-label">이름 (호칭)</label>
+      <input class="input" id="name" placeholder="예: 김목사" />
+    </div>
+    <div class="field">
+      <label class="input-label">이메일 (로그인용)</label>
+      <input class="input" id="email" type="email" />
+    </div>
+    <div class="field">
+      <label class="input-label">비밀번호 (8자 이상)</label>
+      <input class="input" id="pw" type="password" minlength="8" />
+    </div>
+    <div class="field">
+      <label class="input-label">교회 이름</label>
+      <input class="input" id="church" placeholder="예: 베다니교회" />
+    </div>
+
+    <p class="error-msg hidden" id="err"></p>
+    <button class="btn btn-primary mt-8" id="submit">계정 만들고 수련회 등록하기 →</button>
+
+    <div class="card mt-24" style="background: var(--primary-50); font-size: 13px; color: var(--neutral-700);">
+      <strong style="color: var(--primary-500)">✓ 가입 후 바로 수련회를 등록할 수 있어요.</strong><br />
+      ✓ 교회 등록은 관리자 승인 후 활성화됩니다 (보통 1일 이내).<br />
+      ✓ 모든 기능은 무료로 제공되며, 학생 대화 원문은 교사가 볼 수 없습니다.
+    </div>
+
+    <div class="mt-16 text-center">
+      <a href="/teacher/login.html" class="btn-ghost">이미 계정이 있어요 · 로그인</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { api, session } from '/js/common.js'
+    document.getElementById('submit').addEventListener('click', async () => {
+      const name = document.getElementById('name').value.trim()
+      const email = document.getElementById('email').value.trim()
+      const password = document.getElementById('pw').value
+      const churchName = document.getElementById('church').value.trim()
+      const err = document.getElementById('err')
+      if (!name || !email || !password || !churchName) { err.textContent='모두 입력해 주세요'; err.classList.remove('hidden'); return }
+      if (password.length < 8) { err.textContent='비밀번호는 8자 이상이어야 해요'; err.classList.remove('hidden'); return }
+      try {
+        const r = await api.request('/api/auth/teacher/signup', {
+          method: 'POST',
+          body: { email, password, name, churchName }
+        })
+        session.set('teacher', r.token)
+        location.href = '/teacher/dashboard.html'
+      } catch (e) {
+        const msg = e.message === 'email_exists' ? '이미 가입된 이메일입니다.' : '가입 중 문제가 생겼어요.'
+        err.textContent = msg
+        err.classList.remove('hidden')
+      }
+    })
+  </script>
+</body>
+</html>

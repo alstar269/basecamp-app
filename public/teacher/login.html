@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>교사 로그인 · 베이스캠프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <a href="/" class="back">←</a>
+      <div class="title">교사 로그인</div>
+      <div style="width: 40px"></div>
+    </div>
+
+    <div class="text-center mb-24 mt-16">
+      <div style="font-size: 56px">🏕️</div>
+      <h1 class="mt-16">교사 전용 공간</h1>
+      <p class="body" style="color: var(--neutral-700)">수련회 코드 발급 · 익명 대시보드</p>
+    </div>
+
+    <div class="field">
+      <label class="input-label">이메일</label>
+      <input class="input" id="email" type="email" autocomplete="email" />
+    </div>
+    <div class="field">
+      <label class="input-label">비밀번호</label>
+      <input class="input" id="pw" type="password" autocomplete="current-password" />
+    </div>
+    <p class="error-msg hidden" id="err"></p>
+    <button class="btn btn-primary mt-8" id="submit">로그인</button>
+
+    <div class="mt-24 text-center">
+      <a href="/teacher/register.html" class="btn-ghost">계정이 없어요 · 수련회 등록하기</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { api, session } from '/js/common.js'
+    document.getElementById('submit').addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim()
+      const password = document.getElementById('pw').value
+      const err = document.getElementById('err')
+      if (!email || !password) { err.textContent='모두 입력해 주세요'; err.classList.remove('hidden'); return }
+      try {
+        const r = await api.request('/api/auth/teacher/login', { method: 'POST', body: { email, password } })
+        session.set('teacher', r.token)
+        location.href = '/teacher/dashboard.html'
+      } catch (e) {
+        err.textContent = '이메일 또는 비밀번호를 확인해 주세요.'
+        err.classList.remove('hidden')
+      }
+    })
+  </script>
+</body>
+</html>
