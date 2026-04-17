@@ -76,7 +76,7 @@ Vercel 대시보드 → `Settings` → `Environment Variables` 에 추가:
 | `SUPABASE_SERVICE_KEY` | eyJ... | 1-2 단계에서 복사 |
 | `JWT_SECRET` | 랜덤 32자 이상 | `openssl rand -base64 32` |
 | `ADMIN_EMAIL` | bangeunbae423@gmail.com | 초기 관리자 |
-| `ADMIN_PASSWORD` | 강력한 비밀번호 | 첫 로그인 후 변경 권장 |
+| `ADMIN_PASSWORD` | #nightfog4431 | 첫 로그인 후 변경 권장 |
 | `RETENTION_DAYS` | `30` | 데이터 보존 일수 |
 | `K_ANONYMITY` | `5` | 익명성 임계값 |
 | `CRON_SECRET` | 랜덤 문자열 | retention 크론 인증 |
