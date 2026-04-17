@@ -128,7 +128,13 @@
       btn.innerHTML = '<span class="spinner"></span> 검증 중…'
       try {
         const r = await api.request('/api/settings/llm', { method: 'PUT', token, body: { provider, apiKey } })
-        ok.textContent = `✓ 키 검증 및 저장 완료! 이제 학생들이 멘토와 대화할 수 있어요.`
+        if (r.quotaWarning) {
+          ok.style.color = 'var(--warning)'
+          ok.textContent = `⏳ ${r.warning}`
+        } else {
+          ok.style.color = 'var(--success)'
+          ok.textContent = `✓ 키 검증 및 저장 완료! 이제 학생들이 멘토와 대화할 수 있어요.`
+        }
         ok.classList.remove('hidden')
         document.getElementById('api-key').value = ''
         loadStatus()

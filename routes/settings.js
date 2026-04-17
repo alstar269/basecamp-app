@@ -39,7 +39,9 @@ router.put('/llm', require_('teacher'), async (req, res) => {
 
   // 실제 ping 검증 (여러 모델 순차 시도)
   const ping = await pingProvider({ provider, apiKey, model })
-  if (!ping.ok) {
+
+  // 할당량 초과(429) — 키 인증은 통과한 것이므로 저장 허용, 경고만 표시
+  if (!ping.ok && !ping.keyLikelyValid) {
     return res.status(400).json({
       error: 'key_verification_failed',
       code: ping.code || 'unknown',
@@ -51,6 +53,7 @@ router.put('/llm', require_('teacher'), async (req, res) => {
   }
   // ping이 성공한 모델을 저장 (override 없으면 fallback 결과 사용)
   const workingModel = model || ping.workingModel
+  const quotaWarning = !ping.ok && ping.keyLikelyValid
 
   // 암호화 저장
   let encrypted
@@ -74,7 +77,11 @@ router.put('/llm', require_('teacher'), async (req, res) => {
     provider,
     model: workingModel,
     keyHint: keyHint(apiKey),
-    validatedAt: Date.now()
+    validatedAt: Date.now(),
+    quotaWarning: quotaWarning || false,
+    warning: quotaWarning
+      ? '키는 저장되었습니다. 단, 현재 Google 분당 요청 한도(15회)에 도달해 실시간 검증은 건너뛰었어요. 1-2분 뒤 학생 대화가 정상 작동합니다.'
+      : null
   })
 })
 
