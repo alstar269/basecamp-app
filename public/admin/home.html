@@ -189,7 +189,17 @@
       }
     }
     window.deleteChurch = async (id, name) => {
-      if (!confirm(`"${name}" 교회를 삭제할까요?\n\n⚠️ 소속 교사·수련회·학생 세션·대화 모두 영구 삭제됩니다.\n되돌릴 수 없습니다.`)) return
+      const typed = prompt(
+        `⚠️ 위험: "${name}" 교회를 삭제하면\n` +
+        `소속 교사 계정 · 수련회 · 학생 세션 · 대화 · 모든 인사이트가\n` +
+        `영구히 사라집니다. 되돌릴 수 없어요.\n\n` +
+        `계속하려면 교회 이름을 정확히 입력하세요:`
+      )
+      if (typed === null) return
+      if (typed !== name) {
+        toast('이름이 일치하지 않아 취소됨', 'error')
+        return
+      }
       try {
         await api.request(`/api/admin/churches/${id}`, { method: 'DELETE', token })
         toast(`교회 삭제: ${name}`)

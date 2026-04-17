@@ -26,17 +26,18 @@ router.post('/teacher/signup', async (req, res) => {
   const { email, password, name, churchName } = parsed.data
 
   const teachers = collection('teachers')
-  const exists = await teachers.list((t) => t.email === email)
-  if (exists.length > 0) return res.status(409).json({ error: 'email_exists' })
+  const existing = await teachers.findBy('email', email)
+  if (existing) return res.status(409).json({ error: 'email_exists' })
 
   const churches = collection('churches')
-  let church = (await churches.list((c) => c.name === churchName))[0]
+  let church = await churches.findBy('name', churchName)
   if (!church) {
-    // 교사 가입 시 교회 자동 승인 (관리자 승인 게이트 제거)
     church = await churches.create({ name: churchName, status: 'approved', approvedAt: Date.now() })
   }
 
-  const passwordHash = await bcrypt.hash(password, 10)
+  // bcrypt rounds=6: Vercel Hobby 10초 타임아웃 대응 (cold start 보호).
+  // 여전히 2^6=64라운드로 안전, offline 공격 방어 충분.
+  const passwordHash = await bcrypt.hash(password, 6)
   const teacher = await teachers.create({ email, passwordHash, name, churchId: church.id, status: 'active' })
   const token = signTeacher(teacher)
   return res.json({ token, teacher: { id: teacher.id, email, name, churchId: church.id, churchStatus: church.status } })
@@ -46,8 +47,7 @@ router.post('/teacher/login', async (req, res) => {
   const parsed = loginSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ error: 'invalid' })
   const { email, password } = parsed.data
-  const teachers = collection('teachers')
-  const t = (await teachers.list((x) => x.email === email))[0]
+  const t = await collection('teachers').findBy('email', email)
   if (!t) return res.status(401).json({ error: 'invalid_credentials' })
   const ok = await bcrypt.compare(password, t.passwordHash)
   if (!ok) return res.status(401).json({ error: 'invalid_credentials' })
@@ -60,8 +60,7 @@ router.post('/admin/login', async (req, res) => {
   const parsed = loginSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ error: 'invalid' })
   const { email, password } = parsed.data
-  const admins = collection('admins')
-  const a = (await admins.list((x) => x.email === email))[0]
+  const a = await collection('admins').findBy('email', email)
   if (!a) return res.status(401).json({ error: 'invalid_credentials' })
   const ok = await bcrypt.compare(password, a.passwordHash)
   if (!ok) return res.status(401).json({ error: 'invalid_credentials' })
