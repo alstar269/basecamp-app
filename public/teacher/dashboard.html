@@ -114,11 +114,23 @@
           </div>
         `).join('')
 
+      const codeValue = retreat.inviteCode?.code || ''
+      const studentUrl = `${location.origin}/student/enter.html`
       document.getElementById('dash').innerHTML = `
         <div class="card">
           <h2>📍 ${retreat.title}</h2>
           <p class="caption">${retreat.startDate} ~ ${retreat.endDate} · 예상 ${retreat.expectedParticipants}명</p>
-          <div class="mt-8 caption">입장코드: <strong style="font-size: 18px; color: var(--primary-500); letter-spacing: 2px;">${(retreat.inviteCode?.code) || '—'}</strong></div>
+
+          <div class="invite-code-box">
+            <div class="label">🎟️ 학생들에게 공유할 입장코드</div>
+            <div class="code-display" id="code-value">${codeValue || '코드 발급 중…'}</div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="copyCode('${codeValue}')">📋 코드 복사</button>
+              <button class="btn btn-outline" onclick="copyLink('${studentUrl}', '${codeValue}')">🔗 학생 안내 링크 복사</button>
+              <a class="btn btn-outline" href="/student/enter.html" target="_blank">👀 학생 화면 미리보기</a>
+            </div>
+            <div class="hint">학생은 이 코드만 있으면 이름 없이 익명으로 입장해요. 카톡/문자로 공유해 주세요.</div>
+          </div>
         </div>
 
         <div class="dashboard-grid">
@@ -176,6 +188,19 @@
           ${crisisHidden.length > 0 ? `<p class="caption mt-8">🔒 소수 사례 ${crisisHidden.length}건은 개인정보 보호를 위해 비공개 (관리자에게만 에스컬레이션)</p>` : ''}
         </div>
       `
+    }
+
+    // 복사 기능
+    window.copyCode = async (code) => {
+      if (!code) return toast('코드가 아직 없어요', 'error')
+      try { await navigator.clipboard.writeText(code); toast(`코드 복사됨: ${code}`) }
+      catch { toast('복사 실패 — 길게 눌러 선택 후 복사해 주세요', 'error') }
+    }
+    window.copyLink = async (url, code) => {
+      if (!code) return toast('코드가 아직 없어요', 'error')
+      const text = `[베이스캠프 수련회 안내]\n1) 아래 링크 접속\n${url}\n2) 입장코드 입력: ${code}\n\n이름 없이 익명으로 참여할 수 있어요.`
+      try { await navigator.clipboard.writeText(text); toast('안내 메시지 복사 완료!') }
+      catch { toast('복사 실패', 'error') }
     }
 
     // 새 수련회 등록 모달
