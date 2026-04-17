@@ -32,7 +32,8 @@ router.post('/teacher/signup', async (req, res) => {
   const churches = collection('churches')
   let church = (await churches.list((c) => c.name === churchName))[0]
   if (!church) {
-    church = await churches.create({ name: churchName, status: 'pending' })
+    // 교사 가입 시 교회 자동 승인 (관리자 승인 게이트 제거)
+    church = await churches.create({ name: churchName, status: 'approved', approvedAt: Date.now() })
   }
 
   const passwordHash = await bcrypt.hash(password, 10)

@@ -11,7 +11,10 @@
   <div class="container wide">
     <div class="page-header">
       <div class="title">🏕️ 교사 대시보드</div>
-      <a href="#" class="btn-ghost caption" id="logout">로그아웃</a>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <a href="/" class="home-btn" title="홈으로">🏠</a>
+        <a href="#" class="btn-ghost caption" id="logout">로그아웃</a>
+      </div>
     </div>
 
     <div id="profile" class="caption mb-16"></div>
@@ -52,7 +55,7 @@
     async function init() {
       const me = await api.request('/api/auth/teacher/me', { token })
       document.getElementById('profile').innerHTML =
-        `${me.name} · ${me.churchName} <span style="color: ${me.churchStatus === 'approved' ? 'var(--success)' : 'var(--warning)'}">● ${me.churchStatus === 'approved' ? '승인됨' : '관리자 승인 대기중'}</span>`
+        `${me.name} · ${me.churchName} <span style="color: var(--success)">● 활성</span>`
 
       const retreats = await api.request('/api/code/retreats', { token })
       const sel = document.getElementById('retreat-select')

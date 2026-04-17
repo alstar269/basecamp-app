@@ -172,6 +172,13 @@ h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
 }
 .page-header .title { font-weight: 600; font-size: 16px; }
 .page-header .action { color: var(--danger); font-weight: 600; font-size: 14px; }
+.home-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: var(--radius-full);
+  background: var(--primary-50); color: var(--primary-500);
+  font-size: 18px; text-decoration: none; transition: background 0.15s;
+}
+.home-btn:hover { background: var(--primary-100); }
 
 /* ── Landing ─────────────────────────────── */
 .landing-hero {
