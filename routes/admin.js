@@ -24,6 +24,46 @@ router.post('/churches/:id/reject', require_('admin'), async (req, res) => {
   return res.json(updated)
 })
 
+// 관리자: 전체 수련회 목록 (교사·교회·학생 수 포함)
+router.get('/retreats', require_('admin'), async (req, res) => {
+  const [retreats, teachers, churches, students, codes] = await Promise.all([
+    collection('retreats').list(),
+    collection('teachers').list(),
+    collection('churches').list(),
+    collection('students').list(),
+    collection('codes').list()
+  ])
+  const teacherById = Object.fromEntries(teachers.map((t) => [t.id, t]))
+  const churchById = Object.fromEntries(churches.map((c) => [c.id, c]))
+  const studentsByRetreat = students.reduce((acc, s) => {
+    acc[s.retreatId] = (acc[s.retreatId] || 0) + 1
+    return acc
+  }, {})
+  const codeByRetreat = {}
+  for (const c of codes) if (!c.revoked) codeByRetreat[c.retreatId] = c
+
+  return res.json(
+    retreats
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      .map((r) => ({
+        ...r,
+        teacherEmail: teacherById[r.teacherId]?.email || null,
+        teacherName: teacherById[r.teacherId]?.name || null,
+        churchName: churchById[r.churchId]?.name || null,
+        studentCount: studentsByRetreat[r.id] || 0,
+        inviteCode: codeByRetreat[r.id]?.code || null
+      }))
+  )
+})
+
+// 관리자: 모든 수련회 삭제 가능
+router.delete('/retreats/:id', require_('admin'), async (req, res) => {
+  const retreat = await collection('retreats').get(req.params.id)
+  if (!retreat) return res.status(404).json({ error: 'not_found' })
+  const ok = await collection('retreats').delete(req.params.id)
+  return res.json({ ok, deleted: retreat.title })
+})
+
 router.get('/stats', require_('admin'), async (req, res) => {
   const [churches, retreats, teachers, students, conversations, messages, insights, alerts] = await Promise.all([
     collection('churches').list(),

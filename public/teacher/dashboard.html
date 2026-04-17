@@ -22,6 +22,7 @@
     <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
       <button class="btn btn-primary btn-sm" id="new-retreat" style="flex:0 1 auto;">+ 새 수련회 등록</button>
       <select class="input" id="retreat-select" style="flex:1; min-height: 40px; font-size: 14px;"></select>
+      <button class="btn btn-outline btn-sm" id="delete-retreat" style="flex:0 1 auto; color: var(--danger); border-color: #F0C2C2;" title="선택한 수련회 삭제">🗑 삭제</button>
     </div>
 
     <div id="llm-status-banner"></div>
@@ -211,6 +212,26 @@
         </div>
       `
     }
+
+    // 수련회 삭제
+    document.getElementById('delete-retreat').addEventListener('click', async () => {
+      const sel = document.getElementById('retreat-select')
+      const retreatId = sel.value
+      const title = sel.options[sel.selectedIndex]?.text || '수련회'
+      if (!retreatId) return toast('삭제할 수련회가 없어요', 'error')
+      const ok = confirm(
+        `정말로 "${title}"을(를) 삭제할까요?\n\n` +
+        `⚠️ 학생 세션·대화·인사이트·입장코드가 모두 영구 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.`
+      )
+      if (!ok) return
+      try {
+        await api.request(`/api/code/retreat/${retreatId}`, { method: 'DELETE', token })
+        toast('수련회 삭제 완료')
+        init()
+      } catch (e) {
+        toast('삭제 실패: ' + (e?.data?.error || e.message), 'error')
+      }
+    })
 
     // 복사 기능
     window.copyCode = async (code) => {

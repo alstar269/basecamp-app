@@ -201,11 +201,13 @@ h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
 .invite-code-box .hint { font-size: 12px; color: var(--neutral-500); margin-top: 12px; }
 
 /* ── Landing ─────────────────────────────── */
+.container.landing { position: relative; }
 .landing-hero {
-  padding-top: 40px; text-align: center;
+  padding-top: 48px; text-align: center;
 }
 .landing-hero .illust {
   font-size: 72px; margin-bottom: 8px;
+  filter: drop-shadow(0 4px 12px rgba(139, 122, 217, 0.2));
 }
 .landing-hero .sparkle { font-size: 24px; letter-spacing: 8px; display: block; margin-top: -8px; }
 .landing-title {
@@ -215,11 +217,68 @@ h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
   margin: 16px 0 8px;
 }
 .landing-sub { color: var(--neutral-700); font-size: 15px; }
-.landing-mini { color: var(--neutral-500); font-size: 13px; margin-top: 4px; margin-bottom: 40px; }
-.landing-actions { display: flex; flex-direction: column; gap: 12px; }
-.landing-bottom { margin-top: 24px; text-align: center; }
-.landing-bottom .link { color: var(--secondary-500); font-size: 14px; font-weight: 600; padding: 12px; display: block; }
-.landing-bottom .admin-link { color: var(--neutral-500); font-size: 12px; margin-top: 12px; display: inline-block; }
+.landing-mini { color: var(--neutral-500); font-size: 13px; margin-top: 4px; margin-bottom: 36px; }
+
+.landing-cta {
+  position: relative; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(139, 122, 217, 0.3);
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.landing-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(139, 122, 217, 0.4); }
+.landing-cta .arrow { margin-left: 4px; transition: transform 0.15s; }
+.landing-cta:hover .arrow { transform: translateX(4px); }
+
+.landing-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 24px 0 20px; color: var(--neutral-500); font-size: 12px;
+}
+.landing-divider::before, .landing-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--neutral-300); opacity: 0.6;
+}
+
+.quick-actions { display: flex; flex-direction: column; gap: 10px; }
+.action-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+  border: 1px solid rgba(184, 169, 240, 0.25);
+  border-radius: var(--radius-lg);
+  text-decoration: none; color: var(--neutral-900);
+  transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+}
+.action-card:hover {
+  transform: translateY(-2px);
+  background: white;
+  border-color: var(--primary-300);
+  box-shadow: var(--shadow-md);
+}
+.action-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(139, 122, 217, 0.15);
+}
+.action-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.action-text strong { font-size: 15px; font-weight: 600; }
+.action-text span { font-size: 12px; color: var(--neutral-500); }
+.action-arrow { font-size: 24px; color: var(--neutral-300); font-weight: 300; transition: color 0.2s, transform 0.15s; }
+.action-card:hover .action-arrow { color: var(--primary-500); transform: translateX(2px); }
+
+.admin-chip {
+  position: absolute; top: 16px; right: 16px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+  border: 1px solid rgba(184, 169, 240, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 12px; color: var(--neutral-500); font-weight: 500;
+  text-decoration: none; z-index: 10;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.admin-chip:hover { color: var(--primary-500); border-color: var(--primary-300); background: white; }
+.admin-chip svg { opacity: 0.7; }
+.admin-chip:hover svg { opacity: 1; }
+
 .footer { text-align: center; color: var(--neutral-500); font-size: 11px; margin-top: 40px; padding: 20px 0; }
 
 /* ── Dashboard (교사) ────────────────────── */

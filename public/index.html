@@ -10,7 +10,16 @@
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
-  <div class="container">
+  <!-- 우상단 floating 관리자 -->
+  <a href="/admin/login.html" class="admin-chip" title="관리자 로그인">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    <span>관리자</span>
+  </a>
+
+  <div class="container landing">
     <div class="landing-hero">
       <div class="illust">⛺</div>
       <span class="sparkle">✨ 🌙 🔥</span>
@@ -19,15 +28,45 @@
       <p class="landing-mini">당신의 이야기를 기다리고 있어요</p>
     </div>
 
-    <div class="landing-actions">
-      <a href="/student/enter.html" class="btn btn-primary">학생 입장 →</a>
-      <a href="/teacher/login.html" class="btn btn-outline">교사 로그인</a>
-    </div>
+    <a href="/student/enter.html" class="btn btn-primary landing-cta">
+      <span>학생 입장</span>
+      <span class="arrow">→</span>
+    </a>
 
-    <div class="landing-bottom">
-      <a href="/teacher/register.html" class="link">🏕️ 우리 교회 수련회 등록하기</a>
-      <br />
-      <a href="/admin/login.html" class="admin-link">관리자</a>
+    <div class="landing-divider"><span>또는</span></div>
+
+    <div class="quick-actions">
+      <a href="/teacher/login.html" class="action-card">
+        <div class="action-icon" style="background: linear-gradient(135deg, #E8E1FA, #B8A9F0);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
+          </svg>
+        </div>
+        <div class="action-text">
+          <strong>교사 로그인</strong>
+          <span>수련회 관리 · 대시보드</span>
+        </div>
+        <span class="action-arrow">›</span>
+      </a>
+
+      <a href="/teacher/register.html" class="action-card">
+        <div class="action-icon" style="background: linear-gradient(135deg, #ABDBC4, #7EC4A5);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"/>
+            <path d="M5 21V7l7-4 7 4v14"/>
+            <path d="M9 9h1"/>
+            <path d="M14 9h1"/>
+            <path d="M9 13h1"/>
+            <path d="M14 13h1"/>
+            <path d="M10 21v-4h4v4"/>
+          </svg>
+        </div>
+        <div class="action-text">
+          <strong>우리 교회 등록하기</strong>
+          <span>수련회 개설 · 입장코드 발급</span>
+        </div>
+        <span class="action-arrow">›</span>
+      </a>
     </div>
 
     <div class="footer">

@@ -80,6 +80,17 @@ router.get('/retreats', require_('teacher'), async (req, res) => {
   )
 })
 
+// 교사 본인 수련회 삭제 (연관 데이터 cascade 삭제)
+router.delete('/retreat/:id', require_('teacher'), async (req, res) => {
+  const retreat = await collection('retreats').get(req.params.id)
+  if (!retreat) return res.status(404).json({ error: 'not_found' })
+  if (retreat.teacherId !== req.auth.sub) return res.status(403).json({ error: 'forbidden' })
+
+  // Supabase FK ON DELETE CASCADE 로 codes/students/conversations/messages/insights/crisis_alerts 자동 삭제
+  const ok = await collection('retreats').delete(req.params.id)
+  return res.json({ ok })
+})
+
 // 공개 엔드포인트: 학생 코드 검증
 router.post('/verify', async (req, res) => {
   const { code } = req.body || {}

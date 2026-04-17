@@ -23,6 +23,9 @@
     <h2 class="mt-24">⛪ 교회 승인</h2>
     <div id="churches"></div>
 
+    <h2 class="mt-24">📋 전체 수련회 관리</h2>
+    <div id="retreats"></div>
+
     <h2 class="mt-24">👥 멘토 목록</h2>
     <div id="mentors"></div>
 
@@ -47,10 +50,11 @@
 
     async function load() {
       try {
-        const [stats, churches, mentors] = await Promise.all([
+        const [stats, churches, mentors, retreats] = await Promise.all([
           api.request('/api/admin/stats', { token }),
           api.request('/api/admin/churches', { token }),
-          api.request('/api/admin/mentors', { token })
+          api.request('/api/admin/mentors', { token }),
+          api.request('/api/admin/retreats', { token })
         ])
 
         document.getElementById('stats').innerHTML = `
@@ -79,6 +83,23 @@
             </div>
           `).join('')
 
+        document.getElementById('retreats').innerHTML = retreats.length === 0
+          ? '<div class="card caption">등록된 수련회가 없습니다.</div>'
+          : retreats.map((r) => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+              <div style="flex:1; min-width:200px;">
+                <strong>${r.title}</strong>
+                <div class="caption">
+                  📅 ${r.startDate} ~ ${r.endDate} · 👥 학생 ${r.studentCount}명 · 🎟️ ${r.inviteCode || '—'}
+                </div>
+                <div class="caption">
+                  🏛️ ${r.churchName || '—'} · ✉️ ${r.teacherEmail || '—'}
+                </div>
+              </div>
+              <button class="btn btn-sm" style="color: var(--danger); border: 1.5px solid #F0C2C2; background: white; flex: 0 0 auto; min-height: 36px; padding: 6px 14px;" onclick="deleteRetreat('${r.id}', '${(r.title || '').replace(/'/g, "\\'")}', ${r.studentCount})">🗑 삭제</button>
+            </div>
+          `).join('')
+
         document.getElementById('mentors').innerHTML = `
           <div class="mentor-grid">
             ${mentors.map((m) => `
@@ -98,6 +119,19 @@
       }
     }
 
+    window.deleteRetreat = async (id, title, count) => {
+      const msg = count > 0
+        ? `"${title}"을(를) 삭제할까요?\n\n⚠️ 이 수련회엔 학생 ${count}명의 세션이 있습니다. 모두 영구 삭제됩니다.`
+        : `"${title}"을(를) 삭제할까요?`
+      if (!confirm(msg)) return
+      try {
+        await api.request(`/api/admin/retreats/${id}`, { method: 'DELETE', token })
+        toast(`삭제 완료: ${title}`)
+        load()
+      } catch (e) {
+        toast('삭제 실패: ' + (e?.data?.error || e.message), 'error')
+      }
+    }
     window.approve = async (id) => {
       await api.request(`/api/admin/churches/${id}/approve`, { method: 'POST', token })
       toast('승인 완료')
