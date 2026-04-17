@@ -16,7 +16,7 @@ const MAX_OUTPUT_TOKENS = 400
 
 const sendSchema = z.object({
   mentorId: z.string().min(1),
-  conversationId: z.string().uuid().optional(),
+  conversationId: z.string().uuid().nullish(), // null도 허용 (프론트 초기값)
   text: z.string().min(1).max(2000)
 })
 

@@ -90,10 +90,13 @@
       chat.appendChild(loading)
 
       try {
+        // null이면 필드 제거 (zod .optional() 호환 + defensive)
+        const body = { mentorId, text }
+        if (conversationId) body.conversationId = conversationId
         const r = await api.request('/api/chat/send', {
           method: 'POST',
           token: session.get('student'),
-          body: { mentorId, conversationId, text }
+          body
         })
         conversationId = r.conversationId
         loading.remove()
