@@ -115,8 +115,14 @@
         // 특수 케이스 덧입힘
         if (reason === 'mentor_not_configured') {
           msg = '🔧 담당 선생님이 아직 AI 멘토 연결을 설정하지 않았어. 선생님께 "설정 페이지에서 Gemini 키 등록 부탁드려요"라고 말씀드려 줘.'
+        } else if (reason === 'rate_limited') {
+          msg = '⏳ 잠깐만, 지금 멘토가 너무 바빠. 1-2분 뒤 다시 이야기해 줘.'
+        } else if (reason === 'safety_blocked') {
+          msg = '조금 다른 방식으로 이야기해 볼까? 같은 마음을 다른 말로 표현해 줘.'
+        } else if (reason === 'key_invalid') {
+          msg = '🔧 선생님의 AI 키가 유효하지 않아. 선생님께 "설정에서 Gemini 키 재등록 부탁드려요"라고 전해 줘.'
         } else if (reason === 'mentor_unavailable') {
-          msg = '⏳ 멘토가 지금 답을 못하고 있어. 1~2분 뒤 다시 시도해 줘. (Google 무료 한도 초과 가능성)'
+          msg = '⏳ 멘토가 지금 답을 못하고 있어. 1~2분 뒤 다시 시도해 줘.'
         } else if (reason === 'key_decrypt_failed') {
           msg = '⚙️ 서버 설정 문제로 멘토를 부를 수 없어. 선생님께 알려줘.'
         } else if (err?.status === 401) {
@@ -124,6 +130,8 @@
         } else if (err?.status === 429) {
           msg = '⏳ 잠깐만, 너무 빨리 메시지가 오고 있어. 잠시 뒤에 다시 말해 줘.'
         }
+        // 디버그용: 실제 에러 함께 표시 (개발 중에만, 나중에 제거 가능)
+        if (err?.data?.debug) msg += `\n\n[기술: ${err.data.debug.slice(0, 200)}]`
         addBubble('system', msg)
       }
     })

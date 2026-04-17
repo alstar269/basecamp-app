@@ -114,9 +114,29 @@ router.post('/send', require_('student'), async (req, res) => {
       maxTokens: MAX_OUTPUT_TOKENS
     })
   } catch (err) {
-    console.error('[chat] LLM error:', err.message)
-    // 교사 키가 무효화된 경우 (할당량 초과, 잘못된 키 등)
-    return res.status(502).json({ error: 'mentor_unavailable', message: '지금 멘토가 답을 할 수 없는 상태야. 잠시 뒤 다시 시도해 줘.' })
+    const errMsg = err?.message || String(err)
+    console.error('[chat] LLM error:', errMsg)
+
+    // 구체적 에러 구분
+    let code = 'mentor_unavailable'
+    let message = '지금 멘토가 답을 할 수 없는 상태야. 잠시 뒤 다시 시도해 줘.'
+
+    if (/429|quota|rate limit|too many requests/i.test(errMsg)) {
+      code = 'rate_limited'
+      message = '⏳ 잠깐만, 지금 멘토가 너무 바빠. 1-2분 뒤 다시 이야기해 줘.'
+    } else if (/safety|SAFETY|blocked|harmful/i.test(errMsg)) {
+      code = 'safety_blocked'
+      message = '조금 다른 방식으로 이야기해 볼까? 같은 마음을 다른 말로 표현해 줘.'
+    } else if (/401|403|invalid|API key|unauthorized|permission/i.test(errMsg)) {
+      code = 'key_invalid'
+      message = '🔧 선생님의 AI 키가 유효하지 않아. 선생님께 "설정에서 Gemini 키 재등록 부탁드려요" 전해 줘.'
+    }
+
+    return res.status(502).json({
+      error: code,
+      message,
+      debug: errMsg.slice(0, 400) // 디버그용 실제 에러 (학생에게도 보임 — 필요하면 나중에 제거)
+    })
   }
 
   let finalReply = reply
