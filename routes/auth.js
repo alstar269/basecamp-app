@@ -19,28 +19,41 @@ const loginSchema = z.object({
   password: z.string().min(1)
 })
 
-// 교사 회원가입 (교회는 pending 상태로 생성, 관리자 승인 필요)
+// 교사 회원가입 (교회 자동 승인)
 router.post('/teacher/signup', async (req, res) => {
-  const parsed = teacherSignup.safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ error: 'invalid', details: parsed.error.flatten() })
-  const { email, password, name, churchName } = parsed.data
+  const t0 = Date.now()
+  const log = (label) => console.log(`[signup] ${label} @ ${Date.now() - t0}ms`)
+  try {
+    log('start')
+    const parsed = teacherSignup.safeParse(req.body)
+    if (!parsed.success) return res.status(400).json({ error: 'invalid', details: parsed.error.flatten() })
+    const { email, password, name, churchName } = parsed.data
+    log('parsed')
 
-  const teachers = collection('teachers')
-  const existing = await teachers.findBy('email', email)
-  if (existing) return res.status(409).json({ error: 'email_exists' })
+    const teachers = collection('teachers')
+    const existing = await teachers.findBy('email', email)
+    log('findBy teacher')
+    if (existing) return res.status(409).json({ error: 'email_exists' })
 
-  const churches = collection('churches')
-  let church = await churches.findBy('name', churchName)
-  if (!church) {
-    church = await churches.create({ name: churchName, status: 'approved', approvedAt: Date.now() })
+    const churches = collection('churches')
+    let church = await churches.findBy('name', churchName)
+    log('findBy church')
+    if (!church) {
+      church = await churches.create({ name: churchName, status: 'approved', approvedAt: Date.now() })
+      log('church create')
+    }
+
+    const passwordHash = await bcrypt.hash(password, 6)
+    log('bcrypt hash')
+    const teacher = await teachers.create({ email, passwordHash, name, churchId: church.id, status: 'active' })
+    log('teacher create')
+    const token = signTeacher(teacher)
+    log('sign token')
+    return res.json({ token, teacher: { id: teacher.id, email, name, churchId: church.id, churchStatus: church.status } })
+  } catch (err) {
+    console.error('[signup] ERROR', err?.message, err?.stack)
+    return res.status(500).json({ error: 'signup_failed', detail: err?.message })
   }
-
-  // bcrypt rounds=6: Vercel Hobby 10초 타임아웃 대응 (cold start 보호).
-  // 여전히 2^6=64라운드로 안전, offline 공격 방어 충분.
-  const passwordHash = await bcrypt.hash(password, 6)
-  const teacher = await teachers.create({ email, passwordHash, name, churchId: church.id, status: 'active' })
-  const token = signTeacher(teacher)
-  return res.json({ token, teacher: { id: teacher.id, email, name, churchId: church.id, churchStatus: church.status } })
 })
 
 router.post('/teacher/login', async (req, res) => {

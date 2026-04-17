@@ -46,20 +46,25 @@ app.use('/api/settings', settingsRoutes)
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now(), env: IS_VERCEL ? 'vercel' : 'local' }))
 
 // ─── 초기화 ─────────────────────────────────
+// Vercel: 요청 처리 블로킹 없이 백그라운드에서 시도.
+// ensureAdmin은 1회만 필요하므로 첫 콜드 스타트에서 fire-and-forget.
 let initialized = false
 async function init() {
   if (initialized) return
   initialized = true
-  await ensureDataDirs()
-  await ensureAdmin()
+  try {
+    await ensureDataDirs()
+    await ensureAdmin()
+  } catch (e) {
+    console.error('[init] warn:', e?.message)
+  }
   if (!IS_VERCEL) startRetentionJob()
 }
 
-// Vercel: 콜드 스타트마다 init 보장
-app.use(async (req, _res, next) => {
-  if (!initialized) await init().catch((e) => console.error('[init]', e))
-  next()
-})
+// Vercel: 비동기로 시작. await 하지 않아 요청 응답이 지연되지 않음.
+if (IS_VERCEL) {
+  init() // fire and forget
+}
 
 // Vercel: cron 엔드포인트 (daily retention sweep 트리거)
 app.get('/api/cron/retention', async (req, res) => {
@@ -71,10 +76,9 @@ app.get('/api/cron/retention', async (req, res) => {
 
 // 로컬 개발 모드만 listen
 if (!IS_VERCEL) {
-  init().then(() => {
-    app.listen(PORT, () => {
-      console.log(`[basecamp] running at http://localhost:${PORT}`)
-    })
+  await init()
+  app.listen(PORT, () => {
+    console.log(`[basecamp] running at http://localhost:${PORT}`)
   })
 }
 
