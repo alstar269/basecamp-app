@@ -133,12 +133,21 @@
         document.getElementById('api-key').value = ''
         loadStatus()
       } catch (e) {
-        const msgs = {
-          invalid_key_format: '키 형식이 맞지 않아요.',
-          key_verification_failed: '키 검증 실패 — Google/Anthropic에서 키가 유효한지 확인하세요.',
-          encryption_unavailable: '서버 암호화 설정 오류 (운영자에게 문의).'
+        const code = e.message
+        const data = e.data || {}
+        let msg
+        if (code === 'invalid_key_format') msg = data.hint || '키 형식이 맞지 않아요.'
+        else if (code === 'key_verification_failed') {
+          msg = data.hint ? `❌ ${data.hint}` : '키 검증 실패'
+          if (data.reason) {
+            // 상세 에러를 작게 별도 표시
+            msg += `\n\n기술적 상세: ${data.reason.slice(0, 300)}`
+          }
         }
-        err.textContent = msgs[e.message] || '저장 중 오류가 발생했어요.'
+        else if (code === 'encryption_unavailable') msg = '서버 암호화 설정 오류 (운영자에게 문의).'
+        else msg = `저장 중 오류 (${code || 'unknown'})`
+        err.style.whiteSpace = 'pre-wrap'
+        err.textContent = msg
         err.classList.remove('hidden')
       } finally {
         btn.disabled = false

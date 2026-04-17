@@ -37,11 +37,20 @@ router.put('/llm', require_('teacher'), async (req, res) => {
     return res.status(400).json({ error: 'invalid_key_format', hint: `키는 "${PROVIDERS[provider].keyPrefix}"로 시작해야 합니다.` })
   }
 
-  // 실제 ping 검증
+  // 실제 ping 검증 (여러 모델 순차 시도)
   const ping = await pingProvider({ provider, apiKey, model })
   if (!ping.ok) {
-    return res.status(400).json({ error: 'key_verification_failed', reason: ping.error })
+    return res.status(400).json({
+      error: 'key_verification_failed',
+      code: ping.code || 'unknown',
+      reason: ping.error,
+      hint: ping.code === 'auth'
+        ? '키가 잘못되었거나 비활성 상태입니다. Google AI Studio에서 키를 다시 확인하거나 재발급해 주세요.'
+        : '서버가 호환 모델을 찾지 못했습니다. 잠시 후 다시 시도하거나 관리자에게 문의하세요.'
+    })
   }
+  // ping이 성공한 모델을 저장 (override 없으면 fallback 결과 사용)
+  const workingModel = model || ping.workingModel
 
   // 암호화 저장
   let encrypted
@@ -56,14 +65,14 @@ router.put('/llm', require_('teacher'), async (req, res) => {
     llmProvider: provider,
     llmApiKeyEncrypted: encrypted,
     llmKeyHint: keyHint(apiKey),
-    llmModel: model || null,
+    llmModel: workingModel || null,
     llmKeyValidatedAt: new Date().toISOString()
   })
 
   return res.json({
     ok: true,
     provider,
-    model: model || PROVIDERS[provider].defaultModel,
+    model: workingModel,
     keyHint: keyHint(apiKey),
     validatedAt: Date.now()
   })
