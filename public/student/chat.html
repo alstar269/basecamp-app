@@ -130,8 +130,6 @@
         } else if (err?.status === 429) {
           msg = '⏳ 잠깐만, 너무 빨리 메시지가 오고 있어. 잠시 뒤에 다시 말해 줘.'
         }
-        // 디버그용: 실제 에러 함께 표시 (개발 중에만, 나중에 제거 가능)
-        if (err?.data?.debug) msg += `\n\n[기술: ${err.data.debug.slice(0, 200)}]`
         addBubble('system', msg)
       }
     })

@@ -80,10 +80,20 @@ basecamp/
 | 위기 | 카테고리만 교사에 전달, 원문 절대 비공개 |
 | 보존 | 수련회 종료 +30일 뒤 원문·세션 자동 파기 |
 
-## Claude API
+## AI 모델 (BYOK + 공용 폴백)
 
-기본 모델: `claude-haiku-4-5-20251001` (저비용·고속)
-system prompt는 `lib/mentors.js` 에서 편집.
+**기본 동작**: 운영자 공용 키(`GROQ_API_KEY` 환경변수)로 모든 교회 자동 대화 가능. 교사는 아무것도 설정할 필요 없음.
+
+**교사 개인 키 등록(선택)**: 설정 페이지에서 자기 키 등록 시 해당 키 우선 사용. 교회별 독립 할당량 확보.
+
+**지원 Provider**:
+| 이름 | 모델 | 티어 | 발급 |
+|---|---|---|---|
+| Groq ⭐ | Llama 3.3 70B | 무료 14,400/일 | https://console.groq.com/keys |
+| Google | Gemini 2.0 Flash | 무료 1,500/일 | https://aistudio.google.com/apikey |
+| Anthropic | Claude Haiku 4.5 | 유료 | https://console.anthropic.com/settings/keys |
+
+API 키는 AES-256-GCM 암호화 후 DB 저장. system prompt는 `lib/mentors.js` 에서 편집.
 
 ## 배포: GitHub + Supabase + Vercel
 

@@ -21,38 +21,28 @@ const loginSchema = z.object({
 
 // 교사 회원가입 (교회 자동 승인)
 router.post('/teacher/signup', async (req, res) => {
-  const t0 = Date.now()
-  const log = (label) => console.log(`[signup] ${label} @ ${Date.now() - t0}ms`)
   try {
-    log('start')
     const parsed = teacherSignup.safeParse(req.body)
     if (!parsed.success) return res.status(400).json({ error: 'invalid', details: parsed.error.flatten() })
     const { email, password, name, churchName } = parsed.data
-    log('parsed')
 
     const teachers = collection('teachers')
     const existing = await teachers.findBy('email', email)
-    log('findBy teacher')
     if (existing) return res.status(409).json({ error: 'email_exists' })
 
     const churches = collection('churches')
     let church = await churches.findBy('name', churchName)
-    log('findBy church')
     if (!church) {
       church = await churches.create({ name: churchName, status: 'approved', approvedAt: new Date().toISOString() })
-      log('church create')
     }
 
     const passwordHash = await bcrypt.hash(password, 6)
-    log('bcrypt hash')
     const teacher = await teachers.create({ email, passwordHash, name, churchId: church.id, status: 'active' })
-    log('teacher create')
     const token = signTeacher(teacher)
-    log('sign token')
     return res.json({ token, teacher: { id: teacher.id, email, name, churchId: church.id, churchStatus: church.status } })
   } catch (err) {
-    console.error('[signup] ERROR', err?.message, err?.stack)
-    return res.status(500).json({ error: 'signup_failed', detail: err?.message })
+    console.error('[signup] ERROR', err?.message)
+    return res.status(500).json({ error: 'signup_failed' })
   }
 })
 

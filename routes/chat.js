@@ -155,11 +155,8 @@ router.post('/send', require_('student'), async (req, res) => {
       message = '🔧 선생님의 AI 키가 유효하지 않아. 선생님께 "설정에서 Gemini 키 재등록 부탁드려요" 전해 줘.'
     }
 
-    return res.status(502).json({
-      error: code,
-      message,
-      debug: errMsg.slice(0, 400) // 디버그용 실제 에러 (학생에게도 보임 — 필요하면 나중에 제거)
-    })
+    // 프로덕션: debug 필드 제거 (민감 정보 노출 방지)
+    return res.status(502).json({ error: code, message })
   }
 
   let finalReply = reply
