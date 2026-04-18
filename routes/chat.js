@@ -37,16 +37,39 @@ router.post('/send', require_('student'), async (req, res) => {
   const teacher = await collection('teachers').get(retreat.teacherId)
   if (!teacher) return res.status(500).json({ error: 'teacher_missing' })
 
-  if (!teacher.llmApiKeyEncrypted || !teacher.llmProvider) {
-    return res.status(503).json({ error: 'mentor_not_configured', message: '담당 선생님이 아직 AI 멘토 연결을 설정하지 않았어. 선생님께 말씀드려 줄래?' })
-  }
+  // 1) 교사 개인 키 우선, 2) 없으면 운영자 공용 키 폴백
+  let apiKey = null
+  let provider = null
+  let model = null
 
-  let apiKey
-  try {
-    apiKey = decrypt(teacher.llmApiKeyEncrypted)
-  } catch (e) {
-    console.error('[chat] decrypt failed:', e.message)
-    return res.status(500).json({ error: 'key_decrypt_failed' })
+  if (teacher.llmApiKeyEncrypted && teacher.llmProvider) {
+    try {
+      apiKey = decrypt(teacher.llmApiKeyEncrypted)
+      provider = teacher.llmProvider
+      model = teacher.llmModel || PROVIDERS[provider]?.defaultModel
+    } catch (e) {
+      console.error('[chat] decrypt failed:', e.message)
+      return res.status(500).json({ error: 'key_decrypt_failed' })
+    }
+  } else {
+    // 운영자 공용 키 폴백 — 환경변수에 설정되어 있으면 사용
+    const defaultProvider = process.env.DEFAULT_LLM_PROVIDER || 'groq'
+    const sharedKeys = {
+      groq: process.env.GROQ_API_KEY,
+      google: process.env.GOOGLE_API_KEY,
+      anthropic: process.env.ANTHROPIC_API_KEY
+    }
+    const sharedKey = sharedKeys[defaultProvider]
+    if (sharedKey && !sharedKey.startsWith('sk-ant-placeholder')) {
+      apiKey = sharedKey
+      provider = defaultProvider
+      model = PROVIDERS[provider]?.defaultModel
+    } else {
+      return res.status(503).json({
+        error: 'mentor_not_configured',
+        message: '담당 선생님이 아직 AI 멘토 연결을 설정하지 않았어. 선생님께 말씀드려 줄래?'
+      })
+    }
   }
 
   const conversations = collection('conversations')
@@ -106,9 +129,9 @@ router.post('/send', require_('student'), async (req, res) => {
   try {
     const systemPrompt = mentorSystemPrompt(mentor, { gradeBand: student.gradeBand, nickname: student.nickname })
     reply = await sendChat({
-      provider: teacher.llmProvider,
+      provider,
       apiKey,
-      model: teacher.llmModel || PROVIDERS[teacher.llmProvider]?.defaultModel,
+      model,
       system: systemPrompt,
       messages: chatMsgs,
       maxTokens: MAX_OUTPUT_TOKENS
