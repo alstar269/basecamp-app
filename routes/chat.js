@@ -7,7 +7,7 @@ import { require_ } from '../lib/auth.js'
 import { getMentor, mentorSystemPrompt } from '../lib/mentors.js'
 import { detectCrisis, crisisResponseText } from '../lib/crisis.js'
 import { decrypt } from '../lib/encrypt.js'
-import { sendChat, PROVIDERS } from '../lib/llm.js'
+import { sendChat, sanitizeKorean, PROVIDERS } from '../lib/llm.js'
 
 const router = express.Router()
 
@@ -136,6 +136,8 @@ router.post('/send', require_('student'), async (req, res) => {
       messages: chatMsgs,
       maxTokens: MAX_OUTPUT_TOKENS
     })
+    // 한자·비한국어 문자 강제 제거 (청소년 친화)
+    reply = sanitizeKorean(reply)
   } catch (err) {
     const errMsg = err?.message || String(err)
     console.error('[chat] LLM error:', errMsg)

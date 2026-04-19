@@ -105,6 +105,11 @@
         session.set('student', r.token)
         sessionStorage.setItem('basecamp.student.mood', mood || '')
         sessionStorage.setItem('basecamp.student.style', style || '')
+        if (r.resumed && r.nicknameChanged) {
+          alert(`닉네임을 "${r.student.nickname}"(으)로 바꿨어요. 이전 대화 기록은 그대로 이어져요.`)
+        } else if (r.resumed) {
+          // 이전 세션 이어감 — 자동 진행
+        }
         location.href = '/student/mentors.html'
       } catch (e) {
         err.textContent = '입장에 문제가 생겼어요. 잠시 후 다시 시도해 주세요.'
