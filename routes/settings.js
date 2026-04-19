@@ -12,12 +12,20 @@ const router = express.Router()
 router.get('/llm', require_('teacher'), async (req, res) => {
   const t = await collection('teachers').get(req.auth.sub)
   if (!t) return res.status(404).json({ error: 'not_found' })
+
+  // 운영자 공용 폴백 키 존재 여부 (placeholder 제외)
+  const defaultProvider = process.env.DEFAULT_LLM_PROVIDER || 'groq'
+  const sharedKey = ({ groq: process.env.GROQ_API_KEY, google: process.env.GOOGLE_API_KEY, anthropic: process.env.ANTHROPIC_API_KEY })[defaultProvider]
+  const operatorFallbackAvailable = !!sharedKey && !sharedKey.startsWith('sk-ant-placeholder')
+
   return res.json({
     provider: t.llmProvider || null,
     model: t.llmModel || null,
     keyHint: t.llmKeyHint || null,
     validatedAt: t.llmKeyValidatedAt || null,
     isConfigured: !!t.llmApiKeyEncrypted,
+    operatorFallbackAvailable,
+    operatorProvider: operatorFallbackAvailable ? defaultProvider : null,
     availableProviders: PROVIDERS
   })
 })
