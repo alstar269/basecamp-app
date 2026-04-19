@@ -126,6 +126,7 @@
 
       const maxMentor = Math.max(1, ...mentorPreference.map((m) => m.count))
       const maxCategory = Math.max(1, ...categoryCounts.filter((c) => !c.hidden).map((c) => c.count || 0))
+      const totalMsgs = insights.totalMessages || 0
 
       const sentHtml = sentimentTrend.length === 0 ? '<p class="caption">아직 데이터가 없어요</p>' :
         sentimentTrend.map((s) => `
@@ -171,16 +172,47 @@
         </div>
 
         <div class="card">
-          <h2>💭 고민 영역 분포</h2>
-          <p class="caption mb-16">학생들이 털어놓은 주제 (중복 가능)</p>
-          ${categoryCounts.length === 0 ? '<p class="caption">아직 데이터가 없어요</p>' :
-            categoryCounts.map((c) => c.hidden
-              ? `<div style="display:flex; justify-content:space-between; padding: 6px 0;"><span>${CATEGORY_LABEL[c.category] || c.category}</span><span class="caption">🔒 소수 응답 (비공개)</span></div>`
-              : `<div style="margin-bottom: 8px">
-                  <div style="display:flex; justify-content:space-between;"><span>${CATEGORY_LABEL[c.category] || c.category}</span><strong>${c.count}명</strong></div>
-                  <div class="bar"><div class="bar-fill" style="width: ${(c.count / maxCategory) * 100}%"></div></div>
-                </div>`
-            ).join('')}
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <h2 style="margin: 0;">💭 학생들이 털어놓은 마음</h2>
+            <button class="btn btn-sm btn-primary" id="btn-ai-summary" style="width: auto; padding: 8px 14px; min-height: 36px; font-size: 13px;">🤖 AI 수련회 반영 분석</button>
+          </div>
+          <p class="caption mt-8 mb-16">카테고리를 클릭하면 해당 영역의 키워드와 감정 분포를 볼 수 있어요.</p>
+
+          <div class="category-bubbles">
+            ${categoryCounts.length === 0
+              ? '<p class="caption">아직 데이터가 없어요</p>'
+              : categoryCounts.map((c) => {
+                  const pct = totalMsgs ? Math.round((c.count || 0) / totalMsgs * 100) : 0
+                  return c.hidden
+                    ? `<div class="cat-bubble" style="opacity: 0.5; cursor: default;">${CATEGORY_LABEL[c.category] || c.category} <span class="pct">🔒 소수</span></div>`
+                    : `<div class="cat-bubble" data-cat="${c.category}">${CATEGORY_LABEL[c.category] || c.category} <span class="pct">${c.count}명 · ${pct}%</span></div>`
+                }).join('')
+            }
+          </div>
+
+          <div id="cat-detail"></div>
+        </div>
+
+        <div class="card">
+          <h2>🔑 핵심 키워드 구름</h2>
+          <p class="caption mb-16">청소년들이 자주 언급한 단어 (큰 글자 = 자주). 최소 ${insights.kAnonymityThreshold ? Math.max(2, Math.ceil(insights.kAnonymityThreshold/2)) : 2}명 이상이 쓴 단어만 표시.</p>
+          ${(!insights.topKeywords || insights.topKeywords.length === 0)
+            ? '<p class="caption">아직 집계할 키워드가 충분하지 않아요. 대화가 쌓이면 자동으로 나타납니다.</p>'
+            : `<div class="keyword-cloud">
+                ${insights.topKeywords.map((k) => {
+                  const maxC = insights.topKeywords[0].count
+                  const size = 12 + Math.round((k.count / maxC) * 14)
+                  const opacity = 0.5 + (k.count / maxC) * 0.5
+                  return `<span class="keyword-chip" data-kw="${k.keyword}" data-cat="${k.topCategory}" style="font-size: ${size}px; opacity: ${opacity};">${k.keyword}<span class="count">·${k.count}</span></span>`
+                }).join('')}
+              </div>`
+          }
+        </div>
+
+        <div class="card hidden" id="ai-summary-card">
+          <h2>🤖 AI 수련회 반영 분석</h2>
+          <p class="caption mb-8">집계 데이터만으로 생성 (원문 메시지 사용 안 함)</p>
+          <div id="ai-summary-content" class="ai-summary"></div>
         </div>
 
         <div class="card">
@@ -199,7 +231,7 @@
           ${sentHtml}
         </div>
 
-        <div class="card" style="background: ${crisisVisible.length > 0 ? '#FDECEC' : 'white'}">
+        <div class="card" id="crisis-card" style="background: ${crisisVisible.length > 0 ? '#FDECEC' : 'white'}">
           <h2>⚠️ 위기 신호 알림</h2>
           <p class="caption mb-16">학생의 원문 메시지는 <strong>절대 표시되지 않습니다</strong>. 아래는 카테고리별 집계만 보여줘요.</p>
           ${crisisVisible.length === 0
@@ -212,6 +244,88 @@
           ${crisisHidden.length > 0 ? `<p class="caption mt-8">🔒 소수 사례 ${crisisHidden.length}건은 개인정보 보호를 위해 비공개 (관리자에게만 에스컬레이션)</p>` : ''}
         </div>
       `
+
+      // 카테고리 클릭 → 드릴다운
+      document.querySelectorAll('.cat-bubble[data-cat]').forEach((el) => {
+        el.addEventListener('click', () => {
+          const cat = el.dataset.cat
+          document.querySelectorAll('.cat-bubble').forEach((b) => b.classList.remove('active'))
+          el.classList.add('active')
+          renderCategoryDetail(cat, insights, retreat.id)
+        })
+      })
+
+      // 키워드 클릭 → 해당 카테고리 드릴다운
+      document.querySelectorAll('.keyword-chip').forEach((el) => {
+        el.addEventListener('click', () => {
+          const cat = el.dataset.cat
+          const target = document.querySelector(`.cat-bubble[data-cat="${cat}"]`)
+          if (target) target.click()
+          target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        })
+      })
+
+      // AI 요약 버튼
+      document.getElementById('btn-ai-summary')?.addEventListener('click', async () => {
+        await loadAISummary(retreat.id)
+      })
+    }
+
+    function renderCategoryDetail(category, insights, retreatId) {
+      const host = document.getElementById('cat-detail')
+      const CAT = CATEGORY_LABEL[category] || category
+      const sent = insights.sentimentByCategory?.[category] || { positive: 0, neutral: 0, negative: 0, crisis: 0 }
+      const total = (sent.positive || 0) + (sent.neutral || 0) + (sent.negative || 0) + (sent.crisis || 0)
+      const pct = (n) => total ? Math.round(n / total * 100) : 0
+      const keywords = insights.keywordsByCategory?.[category] || []
+      const kwHtml = keywords.length === 0
+        ? '<p class="caption">이 영역에서 집계된 키워드가 아직 부족해요.</p>'
+        : `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+            ${keywords.slice(0, 20).map(k => `<span class="chip" style="background: white; border: 1px solid var(--primary-100);">${k.keyword}<span style="opacity:0.6; margin-left:4px; font-size:10px;">·${k.count}</span></span>`).join('')}
+          </div>`
+
+      host.innerHTML = `
+        <div class="category-detail">
+          <h3>📍 "${CAT}" 영역 상세</h3>
+          ${total > 0 ? `
+            <div class="sent-bar" title="감정 분포">
+              ${sent.positive ? `<div class="seg pos" style="width:${pct(sent.positive)}%"></div>` : ''}
+              ${sent.neutral ? `<div class="seg neu" style="width:${pct(sent.neutral)}%"></div>` : ''}
+              ${sent.negative ? `<div class="seg neg" style="width:${pct(sent.negative)}%"></div>` : ''}
+              ${sent.crisis ? `<div class="seg cri" style="width:${pct(sent.crisis)}%"></div>` : ''}
+            </div>
+            <div class="sent-legend">
+              <span><span class="dot" style="background: var(--success)"></span>긍정 ${pct(sent.positive)}%</span>
+              <span><span class="dot" style="background: var(--neutral-300)"></span>중립 ${pct(sent.neutral)}%</span>
+              <span><span class="dot" style="background: var(--warning)"></span>부정 ${pct(sent.negative)}%</span>
+              ${sent.crisis ? `<span><span class="dot" style="background: var(--danger)"></span>위기 ${pct(sent.crisis)}%</span>` : ''}
+            </div>
+          ` : ''}
+          <div style="margin-top: 10px;"><strong style="font-size: 13px;">자주 언급된 키워드</strong></div>
+          ${kwHtml}
+        </div>
+      `
+    }
+
+    async function loadAISummary(retreatId) {
+      const btn = document.getElementById('btn-ai-summary')
+      const card = document.getElementById('ai-summary-card')
+      const content = document.getElementById('ai-summary-content')
+      btn.disabled = true
+      const originalHtml = btn.innerHTML
+      btn.innerHTML = '<span class="spinner"></span> 분석 중…'
+      card.classList.remove('hidden')
+      content.textContent = 'AI가 분석 중입니다…'
+      try {
+        const r = await api.request(`/api/insights/summary/${retreatId}`, { token })
+        content.textContent = r.summary
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } catch (e) {
+        content.textContent = '분석 생성에 실패했어요. 잠시 후 다시 시도해 주세요.'
+      } finally {
+        btn.disabled = false
+        btn.innerHTML = originalHtml
+      }
     }
 
     // 수련회 삭제

@@ -205,6 +205,37 @@ router.get('/history/:conversationId', require_('student'), async (req, res) => 
   })
 })
 
+// 한국어 핵심 키워드 추출 (간단한 noun-ish 추출 + 조사 제거)
+const STOPWORDS = new Set([
+  '그런데','이렇게','저렇게','아무것','어쩌면','정말로','마침내','오히려','그대로',
+  '그래서','그러면','그러나','하지만','이런','그런','저런','어떤','어떻','이렇','저렇',
+  '있어요','없어요','되어요','그래요','해요','이에요','입니다','합니다','됩니다',
+  '나는','너는','저는','우리','자신','자기','이것','그것','저것','이거','그거','저거',
+  '지금','요즘','오늘','내일','어제','항상','가끔','때때','처음','마지막','예전',
+  '많이','조금','너무','아주','매우','정말','진짜','그냥','별로','약간','살짝',
+  '대한','있는','없는','하는','하지','되지','되고','해서','해도','해야','합시','되는',
+  '때문','위해','통해','따라','대해','이미','아직','벌써','이제','부터','까지',
+  '사람','경우','상태','상황','부분','정도','모습','모양','생각','마음','기분'
+])
+
+function extractKeywords(text) {
+  if (!text || typeof text !== 'string') return []
+  // 2~5자 한글 덩어리 추출
+  const candidates = text.match(/[가-힣]{2,5}/g) || []
+  const cleaned = candidates
+    .map(w => w.replace(/(이에|에게|에서|에도|에는|처럼|같이|부터|까지|마다|라도|이라|하고|라고|으로|이면)$/, ''))
+    .map(w => w.replace(/(이|가|은|는|을|를|에|로|의|와|과|도|만|요|죠|고|네)$/, ''))
+    .filter(w => w.length >= 2 && w.length <= 4)
+    .filter(w => !STOPWORDS.has(w))
+  // 빈도 기반 상위 5개
+  const counts = {}
+  for (const w of cleaned) counts[w] = (counts[w] || 0) + 1
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([w]) => w)
+}
+
 async function extractInsightAsync({ conversationId, studentId, retreatId, mentorId, text, crisis }) {
   try {
     const categories = []
@@ -221,10 +252,12 @@ async function extractInsightAsync({ conversationId, studentId, retreatId, mento
     else if (/(힘들|슬프|우울|괴로|싫|죽|외로)/.test(text)) sentiment = 'negative'
     else if (/(기뻐|감사|좋아|행복|희망|즐거)/.test(text)) sentiment = 'positive'
 
+    const keywords = extractKeywords(text)
+
     for (const category of categories) {
       await collection('insights').create({
         conversationId, studentId, retreatId, mentorId,
-        category, sentiment, crisis: crisis.flagged,
+        category, sentiment, crisis: crisis.flagged, keywords,
         extractedAt: Date.now()
       })
     }
