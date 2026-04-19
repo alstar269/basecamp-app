@@ -263,23 +263,23 @@ h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
 .invite-code-box .hint { font-size: 12px; color: var(--neutral-500); margin-top: 12px; }
 
 /* ── Landing ─────────────────────────────── */
-.container.landing { position: relative; }
+.container.landing { position: relative; padding-top: 16px; padding-bottom: 20px; }
 .landing-hero {
-  padding-top: 48px; text-align: center;
+  padding-top: 24px; text-align: center;
 }
 .landing-hero .illust {
-  font-size: 72px; margin-bottom: 8px;
+  font-size: 56px; margin-bottom: 4px;
   filter: drop-shadow(0 4px 12px rgba(139, 122, 217, 0.2));
 }
-.landing-hero .sparkle { font-size: 24px; letter-spacing: 8px; display: block; margin-top: -8px; }
+.landing-hero .sparkle { font-size: 20px; letter-spacing: 6px; display: block; margin-top: -4px; }
 .landing-title {
-  font-size: 32px; font-weight: 700;
+  font-size: 30px; font-weight: 700;
   background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  margin: 16px 0 8px;
+  margin: 12px 0 6px;
 }
 .landing-sub { color: var(--neutral-700); font-size: 15px; }
-.landing-mini { color: var(--neutral-500); font-size: 13px; margin-top: 4px; margin-bottom: 36px; }
+.landing-mini { color: var(--neutral-500); font-size: 13px; margin-top: 2px; margin-bottom: 22px; }
 
 .landing-cta {
   position: relative; overflow: hidden;
@@ -292,7 +292,7 @@ h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
 
 .landing-divider {
   display: flex; align-items: center; gap: 12px;
-  margin: 24px 0 20px; color: var(--neutral-500); font-size: 12px;
+  margin: 16px 0 14px; color: var(--neutral-500); font-size: 12px;
 }
 .landing-divider::before, .landing-divider::after {
   content: ''; flex: 1; height: 1px; background: var(--neutral-300); opacity: 0.6;
@@ -342,6 +342,17 @@ h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
 .admin-chip:hover svg { opacity: 1; }
 
 .footer { text-align: center; color: var(--neutral-500); font-size: 11px; margin-top: 40px; padding: 20px 0; }
+
+/* Landing 전용 브랜드 푸터 (키움 + 강조) */
+.landing-brand {
+  margin-top: 24px; padding: 14px 16px;
+  text-align: center;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.2px;
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.landing-brand .brand-mark { font-size: 16px; }
+.landing-brand .brand-by { font-size: 13px; font-weight: 500; opacity: 0.85; }
 
 /* ── Dashboard (교사) ────────────────────── */
 .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
