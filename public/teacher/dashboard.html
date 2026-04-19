@@ -234,6 +234,42 @@
         <div class="card" id="crisis-card" style="background: ${crisisVisible.length > 0 ? '#FDECEC' : 'white'}">
           <h2>⚠️ 위기 신호 알림</h2>
           <p class="caption mb-16">학생의 원문 메시지는 <strong>절대 표시되지 않습니다</strong>. 아래는 카테고리별 집계만 보여줘요.</p>
+
+          <details style="margin-bottom: 14px; font-size: 13px; background: white; border: 1px solid var(--neutral-100); border-radius: var(--radius-md); padding: 10px 14px;">
+            <summary style="cursor: pointer; color: var(--neutral-700); font-weight: 600; user-select: none;">
+              ⓘ 어떤 단어를 위기 신호로 감지하나요? <span style="color: var(--neutral-500); font-weight: 400;">— 접기/펼치기</span>
+            </summary>
+            <div style="margin-top: 12px; line-height: 1.7;">
+              <div style="margin-bottom: 12px;">
+                <strong style="color: var(--danger);">🆘 자해·자살 징후</strong>
+                <div class="caption" style="margin-top: 3px;">
+                  자기 자신을 해치려는 직·간접 표현. 예: "죽고 싶어", "사라지고 싶어", "뛰어내리", "손목", "유서", "극단적 선택", "살기 싫어"
+                </div>
+              </div>
+              <div style="margin-bottom: 12px;">
+                <strong style="color: #8F5A12;">🛡️ 학대·폭력 언급</strong>
+                <div class="caption" style="margin-top: 3px;">
+                  가정·학교·관계에서 폭력을 당한 경험. 예: "맞았어", "때렸어", "가정폭력", "학대", "성추행", "성폭행", "아빠가/엄마가/선생님이 때"
+                </div>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <strong style="color: var(--warning);">😔 심한 좌절·절망</strong>
+                <div class="caption" style="margin-top: 3px;">
+                  출구 없는 무의미·포기 표현. 예: "더 이상 못", "다 끝내", "의미 없어", "때려주고 싶어"
+                </div>
+              </div>
+              <div style="border-top: 1px solid var(--neutral-100); padding-top: 10px; margin-top: 10px;">
+                <strong style="color: var(--danger);">🚨 긴급 신호 (즉시 에스컬레이션)</strong>
+                <div class="caption" style="margin-top: 3px;">
+                  "오늘 죽", "지금 죽", "바로 뛰어내리", "유서 썼어" 등 즉각 행동을 암시하는 표현은 관리자에게 별도 알림이 전송됩니다.
+                </div>
+              </div>
+              <p class="caption" style="margin-top: 12px; padding: 8px 10px; background: var(--primary-50); border-radius: 6px;">
+                💡 이 목록은 대표 예시입니다. 문맥을 함께 판단해 AI가 추가 키워드도 감지합니다. 감지 건수만 표시되며 원문·닉네임·시점은 비공개입니다.
+              </p>
+            </div>
+          </details>
+
           ${crisisVisible.length === 0
             ? '<p class="success-msg">✓ 현재 보고된 위기 신호가 없어요</p>'
             : crisisVisible.map((a) => `
