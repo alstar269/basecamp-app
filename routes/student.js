@@ -49,22 +49,11 @@ router.post('/enter', async (req, res) => {
   const deviceHash = hashDevice(req)
   const students = collection('students')
 
-  // 동일 디바이스 재입장 시: 기존 세션 복구하되 닉네임·설문은 새로 입력한 값으로 업데이트
-  // (학생이 기분에 따라 닉네임 바꿔도 이전 대화는 이어짐)
+  // 동일 디바이스 재입장 시 기존 세션 복구 (닉네임 유지 — 이전 대화 이어가기 위함)
   const prev = (await students.list((s) => s.retreatId === inviteCode.retreatId && s.deviceHash === deviceHash))[0]
   if (prev) {
-    const patch = { lastActive: now }
-    if (nickname && nickname !== prev.nickname) patch.nickname = nickname
-    if (gradeBand && gradeBand !== prev.gradeBand) patch.gradeBand = gradeBand
-    if (survey) patch.survey = survey
-    const updated = await students.update(prev.id, patch)
-    const token = signStudent(updated)
-    return res.json({
-      token,
-      student: { id: updated.id, nickname: updated.nickname, retreatId: updated.retreatId },
-      resumed: true,
-      nicknameChanged: patch.nickname ? true : false
-    })
+    const token = signStudent(prev)
+    return res.json({ token, student: { id: prev.id, nickname: prev.nickname, retreatId: prev.retreatId }, resumed: true })
   }
 
   const student = await students.create({
