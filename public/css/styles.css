@@ -343,16 +343,27 @@ h2 { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
 
 .footer { text-align: center; color: var(--neutral-500); font-size: 11px; margin-top: 40px; padding: 20px 0; }
 
-/* Landing 전용 브랜드 푸터 (키움 + 강조) */
+/* Landing 전용 브랜드 푸터 */
 .landing-brand {
-  margin-top: 24px; padding: 14px 16px;
+  margin-top: 14px;
+  padding: 10px 16px 6px;
   text-align: center;
-  font-size: 14px; font-weight: 700; letter-spacing: 0.2px;
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.landing-brand .brand-mark { font-size: 16px; }
-.landing-brand .brand-by { font-size: 13px; font-weight: 500; opacity: 0.85; }
+.landing-brand .brand-mark {
+  font-size: 17px; font-weight: 700; letter-spacing: 0.3px;
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+.landing-brand .brand-by {
+  font-size: 13px; font-weight: 600;
+  color: var(--neutral-700);
+  margin-top: 4px;
+  letter-spacing: 0.2px;
+}
+.landing-brand .brand-by strong { color: var(--primary-500); font-weight: 700; }
 
 /* ── Dashboard (교사) ────────────────────── */
 .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
