@@ -76,6 +76,28 @@
       msgInput.style.height = Math.min(120, msgInput.scrollHeight) + 'px'
     })
 
+    // rate_limited / mentor_unavailable 에러는 자동 재시도 (지수 백오프)
+    async function sendWithRetry(body, maxTries = 3) {
+      let lastErr = null
+      for (let i = 0; i < maxTries; i++) {
+        try {
+          return await api.request('/api/chat/send', {
+            method: 'POST', token: session.get('student'), body
+          })
+        } catch (err) {
+          lastErr = err
+          const reason = err?.data?.error
+          if (reason !== 'rate_limited' && reason !== 'mentor_unavailable') throw err
+          if (i < maxTries - 1) {
+            // 3s → 7s → 12s + 지터
+            const delay = 3000 + i * 4000 + Math.random() * 1500
+            await new Promise(r => setTimeout(r, delay))
+          }
+        }
+      }
+      throw lastErr
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault()
       const text = msgInput.value.trim()
@@ -88,16 +110,16 @@
       loading.className = 'bubble bubble-mentor'
       loading.innerHTML = '<span class="spinner"></span>'
       chat.appendChild(loading)
+      // 재시도 중일 때 사용자에게 알림 (4초 뒤 메시지 교체)
+      const waitMsg = setTimeout(() => {
+        if (loading.parentNode) loading.innerHTML = '<span class="spinner"></span> <span style="font-size:12px;color:var(--neutral-500);margin-left:6px;">사람이 많아 잠시 기다리는 중…</span>'
+      }, 4000)
 
       try {
-        // null이면 필드 제거 (zod .optional() 호환 + defensive)
         const body = { mentorId, text }
         if (conversationId) body.conversationId = conversationId
-        const r = await api.request('/api/chat/send', {
-          method: 'POST',
-          token: session.get('student'),
-          body
-        })
+        const r = await sendWithRetry(body)
+        clearTimeout(waitMsg)
         conversationId = r.conversationId
         loading.remove()
         addBubble('mentor', r.reply)
@@ -105,6 +127,7 @@
           addBubble('system', '⚠️ 지금 많이 힘들어 보여. 상단 🆘 버튼을 누르면 전문 상담 연락처를 볼 수 있어.')
         }
       } catch (err) {
+        clearTimeout(waitMsg)
         loading.remove()
         const reason = err?.data?.error || err?.message || ''
         const serverMsg = err?.data?.message

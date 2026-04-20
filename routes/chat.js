@@ -11,8 +11,8 @@ import { sendChat, sanitizeKorean, PROVIDERS } from '../lib/llm.js'
 
 const router = express.Router()
 
-const MAX_HISTORY = 12
-const MAX_OUTPUT_TOKENS = 400
+const MAX_HISTORY = 10          // 컨텍스트 축소 — TPM 절약
+const MAX_OUTPUT_TOKENS = 280   // 응답 토큰 축소 — 분당 토큰 한도 여유
 
 const sendSchema = z.object({
   mentorId: z.string().min(1),
